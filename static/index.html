@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CarbonSight — Sustainability Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────── */
+    :root {
+      --bg:        #0b0f1a;
+      --surface:   #111827;
+      --surface2:  #1c2537;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #22d3a5;
+      --accent2:   #3b82f6;
+      --danger:    #ef4444;
+      --warn:      #f59e0b;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+      --radius:    12px;
+      --radius-sm: 8px;
+    }
+
+    /* ─── RESET & BASE ──────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ─── LAYOUT ────────────────────────────────────── */
+    .app-shell { display: flex; min-height: 100vh; }
+
+    /* ─── SIDEBAR ────────────────────────────────────── */
+    .sidebar {
+      width: 220px;
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      padding: 0 20px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #fff;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.5px;
+    }
+
+    .nav { padding: 16px 12px; flex: 1; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: all 0.15s;
+      margin-bottom: 2px;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(34,211,165,0.12); color: var(--accent); }
+    .nav-item .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+
+    .nav-section {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      letter-spacing: 1px;
+      padding: 12px 12px 6px;
+      text-transform: uppercase;
+    }
+
+    /* ─── MAIN CONTENT ────────────────────────────────── */
+    .main { margin-left: 220px; flex: 1; }
+
+    /* ─── TOPBAR ──────────────────────────────────────── */
+    .topbar {
+      position: sticky; top: 0;
+      background: rgba(11,15,26,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+    }
+
+    .page-title { font-size: 16px; font-weight: 600; color: #fff; }
+    .page-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+    .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+    /* ─── CONTENT SECTIONS ────────────────────────────── */
+    .section {
+      padding: 28px 32px;
+      display: none;
+    }
+    .section.active { display: block; }
+
+    /* ─── CARDS ───────────────────────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+      font-family: var(--font-mono);
+    }
+
+    .kpi-unit {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ─── PANEL ───────────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 20px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px; height: 14px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* ─── FORM CONTROLS ───────────────────────────────── */
+    .form-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      letter-spacing: 0.3px;
+    }
+
+    input, select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: var(--font-body);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus { border-color: var(--accent); }
+
+    input[type="file"] { padding: 7px 10px; font-size: 12px; }
+
+    /* ─── BUTTONS ─────────────────────────────────────── */
+    .btn {
+      padding: 9px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--font-body);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary { background: var(--accent); color: #0b0f1a; }
+    .btn-primary:hover { background: #1fba93; }
+
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─── TABLE ───────────────────────────────────────── */
+    .tbl-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-green  { background: rgba(34,211,165,0.15); color: var(--accent); }
+    .badge-red    { background: rgba(239,68,68,0.15);  color: var(--danger); }
+    .badge-blue   { background: rgba(59,130,246,0.15); color: var(--accent2); }
+
+    /* ─── CHARTS ──────────────────────────────────────── */
+    .chart-wrap { position: relative; height: 260px; }
+
+    /* ─── TOAST ───────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      font-size: 13px;
+      min-width: 240px;
+      z-index: 9999;
+      display: none;
+      animation: slideUp 0.2s ease;
+    }
+
+    #toast.success { border-left: 3px solid var(--accent); }
+    #toast.error   { border-left: 3px solid var(--danger); }
+
+    @keyframes slideUp {
+      from { transform: translateY(10px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* ─── LOADING BAR ─────────────────────────────────── */
+    #loader {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      z-index: 9999;
+      display: none;
+    }
+
+    /* ═══════════════════════════════════════
+       SIMULATION SECTION
+    ═══════════════════════════════════════ */
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .sim-lever-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .lever-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+
+    .lever-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .lever-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .lever-val {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .lever-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      height: 4px;
+    }
+
+    .sim-result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .sim-result-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      text-align: center;
+    }
+
+    .sim-result-card.highlight {
+      border-color: var(--accent);
+      background: rgba(34,211,165,0.05);
+    }
+
+    .sim-result-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .sim-result-val {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: #fff;
+    }
+
+    .sim-result-val.green { color: var(--accent); }
+    .sim-result-val.red   { color: var(--danger); }
+
+    .sim-result-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .breakdown-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .breakdown-row:last-child { border-bottom: none; }
+
+    .breakdown-bar-wrap {
+      flex: 1;
+      margin: 0 16px;
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .breakdown-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+    .sim-empty {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .sim-empty .big { font-size: 40px; margin-bottom: 10px; }
+
+    /* ─── FILTER BAR ──────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    /* ─── DIVIDER ─────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    /* ─── INPUT SUFFIX ─────────────────────────────────── */
+    .input-group {
+      display: flex;
+      align-items: center;
+    }
+
+    .input-group input {
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    }
+
+    .input-suffix {
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-left: none;
+      color: var(--muted);
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    /* ─── SCROLLBAR ─────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+  </style>
+</head>
+
+<body>
+<div id="loader"></div>
+<div id="toast"></div>
+
+<div class="app-shell">
+
+  <!-- ═══ SIDEBAR ═══════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <div class="logo-icon">🌿</div>
+        <div>
+          <div class="logo-text">CarbonSight</div>
+          <div class="logo-sub">v1.0 · GCP Powered</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">Analytics</div>
+      <button class="nav-item active" onclick="showSection('dashboard', this)">
+        <span class="nav-icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="showSection('simulation', this)">
+        <span class="nav-icon">🔬</span> Simulator
+      </button>
+
+      <div class="nav-section">Data</div>
+      <button class="nav-item" onclick="showSection('upload', this)">
+        <span class="nav-icon">📤</span> Upload Data
+      </button>
+      <button class="nav-item" onclick="showSection('history', this)">
+        <span class="nav-icon">📋</span> Upload History
+      </button>
+
+      <div class="nav-section">Reports</div>
+      <button class="nav-item" onclick="downloadPDF()">
+        <span class="nav-icon">📄</span> Export PDF
+      </button>
+      <button class="nav-item" onclick="downloadExcel()">
+        <span class="nav-icon">📊</span> Export Excel
+      </button>
+
+      <div class="nav-section">System</div>
+      <button class="nav-item" style="color: var(--danger);" onclick="resetAll()">
+        <span class="nav-icon">🗑️</span> Reset Data
+      </button>
+    </nav>
+  </aside>
+
+  <!-- ═══ MAIN ═══════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ─── TOPBAR ──────────────────────────────────── -->
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="page-sub" id="pageSub">Live emissions overview</div>
+      </div>
+      <div class="topbar-actions">
+        <div id="lastUpdated" style="font-size:12px;color:var(--muted);font-family:var(--font-mono);"></div>
+        <button class="btn btn-secondary btn-sm" onclick="refreshDashboard()">↺ Refresh</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         DASHBOARD SECTION
+    ═══════════════════════════════════════ -->
+    <section class="section active" id="section-dashboard">
+
+      <!-- KPI Cards -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Total CO₂ (Product)</div>
+          <div class="kpi-value" id="kpiTotalCo2">—</div>
+          <div class="kpi-unit">kg this period</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Top Emitting Product</div>
+          <div class="kpi-value" id="kpiTopProduct" style="font-size:16px;margin-top:4px;">—</div>
+          <div class="kpi-unit">highest CO₂</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Units Sold</div>
+          <div class="kpi-value" id="kpiTotalUnits">—</div>
+          <div class="kpi-unit">across all products</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-header">
+          <div class="panel-title">Filters</div>
+        </div>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>From</label>
+            <input type="month" id="fromMonth">
+          </div>
+          <div class="form-group">
+            <label>To</label>
+            <input type="month" id="toMonth">
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="categoryFilter">
+              <option value="">All Categories</option>
+              <option value="Apparel">Apparel</option>
+              <option value="Electronics">Electronics</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="applyFilters()">Apply</button>
+          <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">CO₂ Efficiency Trend</div>
+          </div>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Utility Bill Emissions</div>
+          </div>
+          <div class="chart-wrap"><canvas id="billChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-header">
+          <div class="panel-title">Total Company Carbon Footprint</div>
+        </div>
+        <div class="chart-wrap" style="height:220px;"><canvas id="totalFootprintChart"></canvas></div>
+      </div>
+
+      <!-- Product table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Product Emissions Breakdown</div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="metricsTable">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Units Sold</th>
+                <th>Energy CO₂ (kg)</th>
+                <th>Transport CO₂ (kg)</th>
+                <th>Total CO₂ (kg)</th>
+                <th>Data Sources</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         SIMULATION SECTION
+    ═══════════════════════════════════════ -->
+    <section class="section" id="section-simulation">
+
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-header">
+          <div class="panel-title">Baseline Inputs</div>
+          <button class="btn btn-secondary btn-sm" onclick="prefillSimulation()">⬇ Load from my data</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+          <div class="form-group">
+            <label>Monthly Units Shipped</label>
+            <input type="number" id="sim_monthly_units" value="10000" min="0">
+          </div>
+          <div class="form-group">
+            <label>Energy kWh per Unit</label>
+            <input type="number" id="sim_energy_kwh" value="2.5" step="0.1" min="0">
+          </div>
+          <div class="form-group">
+            <label>Transport km per Unit</label>
+            <input type="number" id="sim_transport_km" value="150" step="1" min="0">
+          </div>
+          <div class="form-group">
+            <label>Monthly Electricity (kWh)</label>
+            <input type="number" id="sim_elec_units" value="5000" min="0">
+          </div>
+          <div class="form-group">
+            <label>Monthly Fuel (litres)</label>
+            <input type="number" id="sim_fuel_units" value="1000" min="0">
+          </div>
+          <div class="form-group">
+            <label>Monthly Courier Weight (kg)</label>
+            <input type="number" id="sim_courier_units" value="800" min="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Levers -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-header">
+          <div class="panel-title">Green Intervention Levers</div>
+          <button class="btn btn-secondary btn-sm" onclick="resetLevers()">Reset Levers</button>
+        </div>
+        <div class="sim-lever-grid">
+
+          <div class="lever-card">
+            <div class="lever-header">
+              <span class="lever-name">⚡ Energy Efficiency</span>
+              <span class="lever-val" id="lv_energy_val">0%</span>
+            </div>
+            <div class="lever-desc">Reduce energy consumption per unit through process improvements, better machinery, or insulation.</div>
+            <input type="range" id="lv_energy" min="0" max="80" value="0"
+                   oninput="document.getElementById('lv_energy_val').textContent=this.value+'%';runSimulation()">
+          </div>
+
+          <div class="lever-card">
+            <div class="lever-header">
+              <span class="lever-name">🚚 Route Optimisation</span>
+              <span class="lever-val" id="lv_transport_val">0%</span>
+            </div>
+            <div class="lever-desc">Consolidate shipments, reduce last-mile km via regional fulfilment centres or smart routing.</div>
+            <input type="range" id="lv_transport" min="0" max="60" value="0"
+                   oninput="document.getElementById('lv_transport_val').textContent=this.value+'%';runSimulation()">
+          </div>
+
+          <div class="lever-card">
+            <div class="lever-header">
+              <span class="lever-name">☀️ Renewable Energy</span>
+              <span class="lever-val" id="lv_renewable_val">0%</span>
+            </div>
+            <div class="lever-desc">Switch electricity to solar/wind. Factor drops from 0.82 kg/kWh (grid) to 0.05 kg/kWh (renewable).</div>
+            <input type="range" id="lv_renewable" min="0" max="100" value="0"
+                   oninput="document.getElementById('lv_renewable_val').textContent=this.value+'%';runSimulation()">
+          </div>
+
+          <div class="lever-card">
+            <div class="lever-header">
+              <span class="lever-name">🔋 EV Fleet Adoption</span>
+              <span class="lever-val" id="lv_ev_val">0%</span>
+            </div>
+            <div class="lever-desc">Replace diesel delivery vehicles with EVs. Transport factor drops from 0.0525 to 0.021 kg/km.</div>
+            <input type="range" id="lv_ev" min="0" max="100" value="0"
+                   oninput="document.getElementById('lv_ev_val').textContent=this.value+'%';runSimulation()">
+          </div>
+
+          <div class="lever-card">
+            <div class="lever-header">
+              <span class="lever-name">📦 Packaging Reduction</span>
+              <span class="lever-val" id="lv_packaging_val">0%</span>
+            </div>
+            <div class="lever-desc">Reduce packaging material weight — lighter parcels mean less energy per unit handled and shipped.</div>
+            <input type="range" id="lv_packaging" min="0" max="80" value="0"
+                   oninput="document.getElementById('lv_packaging_val').textContent=this.value+'%';runSimulation()">
+          </div>
+
+          <div class="lever-card">
+            <div class="lever-header">
+              <span class="lever-name">📈 Business Growth</span>
+              <span class="lever-val" id="lv_growth_val">0%</span>
+            </div>
+            <div class="lever-desc">Model the emissions impact of growing your order volume — useful for net-zero planning alongside other levers.</div>
+            <input type="range" id="lv_growth" min="0" max="200" value="0"
+                   oninput="document.getElementById('lv_growth_val').textContent=this.value+'%';runSimulation()">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Results placeholder -->
+      <div id="sim-results">
+        <div class="sim-empty">
+          <div class="big">🔬</div>
+          Adjust the levers above to see projected CO₂ impact in real time.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         UPLOAD SECTION
+    ═══════════════════════════════════════ -->
+    <section class="section" id="section-upload">
+
+      <!-- CSV Upload -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-header">
+          <div class="panel-title">Upload Sales Data (CSV)</div>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+          CSV must have columns: <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:12px;">product_id, units_sold, energy_kwh, transport_km, record_date</code>
+        </p>
+        <div class="form-row">
+          <input type="file" id="fileInput" accept=".csv">
+          <button class="btn btn-primary" onclick="upload()">⬆ Upload CSV</button>
+        </div>
+      </div>
+
+      <!-- Utility Bill -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Upload Utility Bill</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Bill Type</label>
+            <select id="billType">
+              <option value="electricity">⚡ Electricity</option>
+              <option value="fuel">⛽ Fuel</option>
+              <option value="courier">📦 Courier</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Amount (₹)</label>
+            <input type="number" id="billAmount" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Units</label>
+            <input type="number" id="billUnits" placeholder="e.g. 500">
+          </div>
+          <div class="form-group">
+            <label>Region</label>
+            <input type="text" id="billRegion" placeholder="e.g. India" value="India">
+          </div>
+          <div class="form-group">
+            <label>Month</label>
+            <input type="month" id="billMonth">
+          </div>
+          <button class="btn btn-primary" onclick="uploadBill()" style="margin-top:auto;">Upload Bill</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         HISTORY SECTION
+    ═══════════════════════════════════════ -->
+    <section class="section" id="section-history">
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Upload History</div>
+          <button class="btn btn-secondary btn-sm" onclick="loadUploadHistory()">↺ Refresh</button>
+        </div>
+        <div class="tbl-wrap">
+          <table id="uploadTable">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>File Name</th>
+                <th>Rows Loaded</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div><!-- /app-shell -->
+
+
+<script>
+/* ═══════════════════════════════════════════
+   NAV & SECTION ROUTING
+═══════════════════════════════════════════ */
+
+const PAGE_META = {
+  dashboard:  { title: 'Dashboard',      sub: 'Live emissions overview' },
+  simulation: { title: 'CO₂ Simulator',  sub: 'Model green interventions' },
+  upload:     { title: 'Upload Data',    sub: 'CSV & utility bill ingestion' },
+  history:    { title: 'Upload History', sub: 'Audit trail of all uploads' },
+};
+
+function showSection(name, navEl) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  document.getElementById('pageTitle').textContent = PAGE_META[name].title;
+  document.getElementById('pageSub').textContent   = PAGE_META[name].sub;
+
+  if (name === 'history') loadUploadHistory();
+}
+
+/* ═══════════════════════════════════════════
+   TOAST / LOADER
+═══════════════════════════════════════════ */
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+  el.className = type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+function showLoader()  { document.getElementById('loader').style.display = 'block'; }
+function hideLoader()  { document.getElementById('loader').style.display = 'none';  }
+
+/* ═══════════════════════════════════════════
+   DASHBOARD INIT
+═══════════════════════════════════════════ */
+
+async function refreshDashboard() {
+  showLoader();
+  await Promise.all([
+    loadMetrics(null),
+    loadTrends(),
+    loadBillTrends(),
+    loadTotalFootprint(),
+    loadCompanyKpis(),
+  ]);
+  document.getElementById('lastUpdated').textContent =
+    'Updated ' + new Date().toLocaleTimeString();
+  hideLoader();
+}
+
+async function refreshWithRetry(retries = 3, delay = 1800) {
+  for (let i = 0; i < retries; i++) {
+    await refreshDashboard();
+    await new Promise(r => setTimeout(r, delay));
+    try {
+      const r = await fetch('/total-footprint');
+      const j = await r.json();
+      if (j.data && j.data.length >= 0) return;
+    } catch {}
+  }
+}
+
+/* ═══════════════════════════════════════════
+   FILTERS
+═══════════════════════════════════════════ */
+
+let dashState = { from: null, to: null, category: null };
+
+function applyFilters() {
+  dashState.from     = document.getElementById('fromMonth').value;
+  dashState.to       = document.getElementById('toMonth').value;
+  dashState.category = document.getElementById('categoryFilter').value;
+  loadMetrics(dashState.from ? dashState.from + '-01' : null);
+}
+
+function clearFilters() {
+  document.getElementById('fromMonth').value     = '';
+  document.getElementById('toMonth').value       = '';
+  document.getElementById('categoryFilter').value = '';
+  dashState = { from: null, to: null, category: null };
+  loadMetrics(null);
+}
+
+/* ═══════════════════════════════════════════
+   METRICS TABLE + KPI CARDS
+═══════════════════════════════════════════ */
+
+async function loadMetrics(since = null) {
+  const url = since ? `/metrics?since=${since}` : '/metrics';
+  const res  = await fetch(url);
+  const json = await res.json();
+  const data = json.data || [];
+
+  let totalCo2 = 0, totalUnits = 0, topProduct = null;
+  let html = '';
+
+  data.forEach(row => {
+    totalCo2   += row.total_co2_kg;
+    totalUnits += row.total_units_sold;
+    if (!topProduct || row.total_co2_kg > topProduct.total_co2_kg) topProduct = row;
+
+    html += `
+      <tr>
+        <td><b>${row.product_name}</b></td>
+        <td><span class="badge badge-blue">${row.category}</span></td>
+        <td>${row.total_units_sold.toLocaleString()}</td>
+        <td>${row.energy_co2_kg.toFixed(2)}</td>
+        <td>${row.transport_co2_kg.toFixed(2)}</td>
+        <td><b>${row.total_co2_kg.toFixed(2)}</b></td>
+        <td style="font-size:11px;color:var(--muted);">
+          ${row.energy_ref || '—'}<br>${row.transport_ref || '—'}
+        </td>
+      </tr>`;
+  });
+
+  document.querySelector('#metricsTable tbody').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">No data. Upload a CSV to get started.</td></tr>';
+  document.getElementById('kpiTotalCo2').textContent    = totalCo2.toFixed(1);
+  document.getElementById('kpiTotalUnits').textContent  = totalUnits.toLocaleString();
+  document.getElementById('kpiTopProduct').textContent  = topProduct ? topProduct.product_name : '—';
+}
+
+/* ═══════════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════════ */
+
+let trendChart = null, billChart = null, totalChart = null;
+
+const CHART_DEFAULTS = {
+  color: '#e2e8f0',
+  gridColor: 'rgba(255,255,255,0.05)',
+  font: { family: 'DM Sans' }
+};
+
+function baseChartOptions(yLabel = '') {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: CHART_DEFAULTS.gridColor } },
+      y: {
+        ticks: { color: '#64748b', font: { size: 11 } },
+        grid: { color: CHART_DEFAULTS.gridColor },
+        title: yLabel ? { display: true, text: yLabel, color: '#64748b', font: { size: 11 } } : undefined
+      }
+    }
+  };
+}
+
+async function loadTrends() {
+  const res  = await fetch('/trends');
+  const json = await res.json();
+  const data = json.data || [];
+  if (!data.length) return;
+
+  const labels = data.map(d => d.month);
+  const cpu    = data.map(d => d.co2_per_unit);
+  const avg    = cpu.map((v, i, arr) =>
+    i < 2 ? null : +((arr[i] + arr[i - 1] + arr[i - 2]) / 3).toFixed(3));
+
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'CO₂ / Unit', data: cpu, borderColor: '#22d3a5', backgroundColor: 'rgba(34,211,165,0.08)', tension: 0.4, fill: true, pointRadius: 4 },
+        { label: '3-Mo Avg',   data: avg, borderColor: '#3b82f6',  borderDash: [5, 5], tension: 0.4, pointRadius: 0 }
+      ]
+    },
+    options: baseChartOptions('kg CO₂ / Unit')
+  });
+}
+
+async function loadBillTrends() {
+  const res  = await fetch('/bill-insights');
+  const json = await res.json();
+  const data = json.data || [];
+  if (!data.length) return;
+
+  const months      = [...new Set(data.map(d => d.month))];
+  const electricity = months.map(m => data.filter(d => d.month === m && d.bill_type === 'electricity').reduce((a, b) => a + b.estimated_co2, 0));
+  const fuel        = months.map(m => data.filter(d => d.month === m && d.bill_type === 'fuel').reduce((a, b) => a + b.estimated_co2, 0));
+  const courier     = months.map(m => data.filter(d => d.month === m && d.bill_type === 'courier').reduce((a, b) => a + b.estimated_co2, 0));
+
+  const ctx = document.getElementById('billChart').getContext('2d');
+  if (billChart) billChart.destroy();
+  billChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Electricity', data: electricity, backgroundColor: '#22d3a5', stack: 'bills' },
+        { label: 'Fuel',        data: fuel,         backgroundColor: '#f59e0b', stack: 'bills' },
+        { label: 'Courier',     data: courier,      backgroundColor: '#3b82f6', stack: 'bills' }
+      ]
+    },
+    options: { ...baseChartOptions('kg CO₂'), scales: { ...baseChartOptions().scales, x: { ...baseChartOptions().scales.x, stacked: true }, y: { ...baseChartOptions().scales.y, stacked: true } } }
+  });
+}
+
+async function loadTotalFootprint() {
+  const res  = await fetch('/total-footprint');
+  const json = await res.json();
+  const data = json.data || [];
+  if (!data.length) return;
+
+  const ctx = document.getElementById('totalFootprintChart').getContext('2d');
+  if (totalChart) totalChart.destroy();
+  totalChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.month),
+      datasets: [
+        { label: 'Product CO₂', data: data.map(d => d.product_co2), backgroundColor: '#22d3a5', stack: 'c' },
+        { label: 'Utility CO₂', data: data.map(d => d.utility_co2), backgroundColor: '#3b82f6', stack: 'c' },
+        { label: 'Total',       data: data.map(d => d.total_co2),   type: 'line', borderColor: '#f59e0b', tension: 0.3, pointRadius: 3, fill: false }
+      ]
+    },
+    options: { ...baseChartOptions('kg CO₂'), scales: { ...baseChartOptions().scales, x: { ...baseChartOptions().scales.x, stacked: true }, y: { ...baseChartOptions().scales.y, stacked: true } } }
+  });
+}
+
+async function loadCompanyKpis() {
+  try {
+    const res  = await fetch('/company-kpis');
+    const json = await res.json();
+    // Optionally update a company-level KPI here
+  } catch {}
+}
+
+/* ═══════════════════════════════════════════
+   UPLOAD CSV
+═══════════════════════════════════════════ */
+
+async function upload() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) { toast('Please select a CSV file', 'error'); return; }
+
+  showLoader();
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const res    = await fetch('/upload', { method: 'POST', body: fd });
+    const result = await res.json();
+    if (!res.ok || result.error) { toast('Upload failed: ' + (result.details || 'Unknown error'), 'error'); }
+    else { toast(`Uploaded ${result.rows} rows successfully`); await refreshWithRetry(); }
+  } catch { toast('Network error', 'error'); }
+  finally { hideLoader(); }
+}
+
+/* ═══════════════════════════════════════════
+   UPLOAD BILL
+═══════════════════════════════════════════ */
+
+async function uploadBill() {
+  const type   = document.getElementById('billType').value;
+  const amount = document.getElementById('billAmount').value;
+  const units  = document.getElementById('billUnits').value;
+  const region = document.getElementById('billRegion').value;
+  const month  = document.getElementById('billMonth').value;
+
+  if (!units || !month) { toast('Please fill all required bill fields', 'error'); return; }
+
+  showLoader();
+  const params = new URLSearchParams({ bill_type: type, amount, units, region, month });
+
+  try {
+    const res  = await fetch('/upload-bill?' + params, { method: 'POST' });
+    const json = await res.json();
+    if (!res.ok || json.error) { toast('Bill upload failed', 'error'); }
+    else { toast(`Bill uploaded · est. CO₂: ${json.estimated_co2.toFixed(2)} kg`); await refreshWithRetry(); }
+  } catch { toast('Network error', 'error'); }
+  finally { hideLoader(); }
+}
+
+/* ═══════════════════════════════════════════
+   UPLOAD HISTORY
+═══════════════════════════════════════════ */
+
+async function loadUploadHistory() {
+  const res  = await fetch('/uploads');
+  const json = await res.json();
+  const data = json.data || [];
+  const tbody = document.querySelector('#uploadTable tbody');
+
+  tbody.innerHTML = data.map(row => `
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:12px;">${new Date(row.upload_time).toLocaleString()}</td>
+      <td>${row.file_name}</td>
+      <td>${(row.rows_loaded || 0).toLocaleString()}</td>
+      <td><span class="badge ${row.status === 'SUCCESS' ? 'badge-green' : 'badge-red'}">${row.status}</span></td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-secondary btn-sm" onclick="viewSince('${row.upload_time}')">View Since</button>
+        <button class="btn btn-danger btn-sm"    onclick="deleteUpload('${row.upload_id}')">Delete</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;">No upload history found.</td></tr>';
+}
+
+async function viewSince(uploadTime) {
+  const sinceDate = new Date(uploadTime).toISOString().split('T')[0];
+  showSection('dashboard', document.querySelector('.nav-item'));
+  await loadMetrics(sinceDate);
+  toast('Filtered to show data since ' + new Date(uploadTime).toLocaleDateString());
+}
+
+async function deleteUpload(uploadId) {
+  if (!confirm('Delete this upload record?')) return;
+  const res = await fetch(`/uploads/${uploadId}`, { method: 'DELETE' });
+  if (res.ok) { toast('Upload deleted'); await loadUploadHistory(); }
+  else toast('Delete failed', 'error');
+}
+
+/* ═══════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════ */
+
+async function resetAll() {
+  if (!confirm('⚠️  This will permanently DELETE ALL DATA.\nAre you absolutely sure?')) return;
+  showLoader();
+  try {
+    const res = await fetch('/reset-all', { method: 'DELETE' });
+    if (res.ok) { toast('All data cleared'); location.reload(); }
+    else toast('Reset failed', 'error');
+  } catch { toast('Network error', 'error'); }
+  finally { hideLoader(); }
+}
+
+/* ═══════════════════════════════════════════
+   EXPORTS
+═══════════════════════════════════════════ */
+
+function getChartImages() {
+  return {
+    trend: trendChart ? trendChart.toBase64Image() : null,
+    bill:  billChart  ? billChart.toBase64Image()  : null,
+    total: totalChart ? totalChart.toBase64Image() : null,
+  };
+}
+
+async function downloadPDF() {
+  showLoader();
+  try {
+    const res  = await fetch('/export/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(getChartImages())
+    });
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'carbonsight_report.pdf'; a.click();
+    toast('PDF downloaded');
+  } catch { toast('PDF export failed', 'error'); }
+  finally { hideLoader(); }
+}
+
+function downloadExcel() {
+  window.location.href = '/export/excel';
+  toast('Excel download started');
+}
+
+/* ═══════════════════════════════════════════════════
+   SIMULATION ENGINE
+═══════════════════════════════════════════════════ */
+
+function resetLevers() {
+  ['lv_energy','lv_transport','lv_renewable','lv_ev','lv_packaging','lv_growth'].forEach(id => {
+    document.getElementById(id).value = 0;
+    document.getElementById(id + '_val').textContent = '0%';
+  });
+  document.getElementById('sim-results').innerHTML = `
+    <div class="sim-empty">
+      <div class="big">🔬</div>
+      Adjust the levers above to see projected CO₂ impact in real time.
+    </div>`;
+}
+
+async function prefillSimulation() {
+  showLoader();
+  try {
+    const res  = await fetch('/simulate/prefill');
+    const json = await res.json();
+    document.getElementById('sim_monthly_units').value  = json.monthly_units;
+    document.getElementById('sim_energy_kwh').value     = json.energy_kwh_per_unit;
+    document.getElementById('sim_transport_km').value   = json.transport_km_per_unit;
+    document.getElementById('sim_elec_units').value     = json.electricity_units;
+    document.getElementById('sim_fuel_units').value     = json.fuel_units;
+    document.getElementById('sim_courier_units').value  = json.courier_units;
+    toast('Prefilled from your last 90 days of data');
+  } catch { toast('Could not load data — using defaults', 'error'); }
+  finally { hideLoader(); }
+}
+
+async function runSimulation() {
+  const payload = {
+    monthly_units:           parseFloat(document.getElementById('sim_monthly_units').value) || 10000,
+    energy_kwh_per_unit:     parseFloat(document.getElementById('sim_energy_kwh').value)    || 2.5,
+    transport_km_per_unit:   parseFloat(document.getElementById('sim_transport_km').value)   || 150,
+    electricity_units:       parseFloat(document.getElementById('sim_elec_units').value)     || 5000,
+    fuel_units:              parseFloat(document.getElementById('sim_fuel_units').value)     || 1000,
+    courier_units:           parseFloat(document.getElementById('sim_courier_units').value)  || 800,
+    energy_reduction_pct:    parseFloat(document.getElementById('lv_energy').value),
+    transport_reduction_pct: parseFloat(document.getElementById('lv_transport').value),
+    renewable_energy_pct:    parseFloat(document.getElementById('lv_renewable').value),
+    ev_fleet_pct:            parseFloat(document.getElementById('lv_ev').value),
+    packaging_reduction_pct: parseFloat(document.getElementById('lv_packaging').value),
+    units_growth_pct:        parseFloat(document.getElementById('lv_growth').value),
+  };
+
+  try {
+    const res  = await fetch('/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    renderSimResults(data);
+  } catch (e) {
+    console.error('Simulation error:', e);
+  }
+}
+
+function renderSimResults(d) {
+  const b = d.baseline;
+  const s = d.simulated;
+  const i = d.impact;
+
+  const redClass = i.reduction_pct >= 0 ? 'green' : 'red';
+  const redSign  = i.reduction_pct >= 0 ? '↓' : '↑';
+
+  // Breakdown bar data: max is baseline total
+  const bMax = b.total_co2_kg;
+  function bar(val, color) {
+    const pct = bMax > 0 ? Math.min(100, (val / bMax) * 100) : 0;
+    return `<div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${pct.toFixed(1)}%;background:${color};"></div></div>`;
+  }
+
+  const rows = [
+    { label: '⚡ Energy (ops)',       bv: b.breakdown.energy_co2_kg,      sv: s.breakdown.energy_co2_kg,      color: '#22d3a5' },
+    { label: '🚚 Transport (ops)',    bv: b.breakdown.transport_co2_kg,   sv: s.breakdown.transport_co2_kg,   color: '#3b82f6' },
+    { label: '🏭 Grid Electricity',  bv: b.breakdown.electricity_co2_kg, sv: s.breakdown.electricity_co2_kg, color: '#f59e0b' },
+    { label: '⛽ Fuel',              bv: b.breakdown.fuel_co2_kg,        sv: s.breakdown.fuel_co2_kg,        color: '#ef4444' },
+    { label: '📦 Courier',           bv: b.breakdown.courier_co2_kg,     sv: s.breakdown.courier_co2_kg,     color: '#a78bfa' },
+  ];
+
+  const breakdownHTML = rows.map(r => `
+    <div class="breakdown-row">
+      <span style="width:160px;font-size:13px;">${r.label}</span>
+      ${bar(r.bv, r.color + '55')}
+      <span style="width:80px;text-align:right;color:var(--muted);">${r.bv.toFixed(1)}</span>
+      <span style="width:20px;text-align:center;color:var(--muted);">→</span>
+      ${bar(r.sv, r.color)}
+      <span style="width:80px;text-align:right;font-weight:600;color:${r.sv < r.bv ? 'var(--accent)' : 'var(--danger)'};">${r.sv.toFixed(1)}</span>
+    </div>`).join('');
+
+  document.getElementById('sim-results').innerHTML = `
+
+    <!-- Summary KPI cards -->
+    <div class="sim-result-grid">
+      <div class="sim-result-card">
+        <div class="sim-result-label">Baseline Total CO₂</div>
+        <div class="sim-result-val">${b.total_co2_kg.toFixed(0)}</div>
+        <div class="sim-result-sub">kg / month</div>
+      </div>
+      <div class="sim-result-card highlight">
+        <div class="sim-result-label">Simulated Total CO₂</div>
+        <div class="sim-result-val ${redClass}">${s.total_co2_kg.toFixed(0)}</div>
+        <div class="sim-result-sub">kg / month</div>
+      </div>
+      <div class="sim-result-card highlight">
+        <div class="sim-result-label">Reduction</div>
+        <div class="sim-result-val ${redClass}">${redSign} ${Math.abs(i.reduction_pct).toFixed(1)}%</div>
+        <div class="sim-result-sub">${i.co2_saved_kg.toFixed(0)} kg saved / month</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+
+      <!-- Breakdown panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Emissions Breakdown: Baseline → Simulated</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-family:var(--font-mono);">All values in kg CO₂ / month</div>
+        ${breakdownHTML}
+      </div>
+
+      <!-- Impact metrics -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Impact Metrics</div>
+        </div>
+
+        <div class="breakdown-row">
+          <span style="color:var(--muted);">📅 Annual CO₂ Saved</span>
+          <span style="font-weight:700;color:var(--accent);">${(i.annual_co2_saved_kg / 1000).toFixed(2)} tonnes</span>
+        </div>
+        <div class="breakdown-row">
+          <span style="color:var(--muted);">🌳 Trees to Offset Remainder</span>
+          <span style="font-weight:700;">${i.trees_to_offset_remaining.toLocaleString()}</span>
+        </div>
+        <div class="breakdown-row">
+          <span style="color:var(--muted);">💰 Est. Energy Cost Savings</span>
+          <span style="font-weight:700;color:#f59e0b;">₹${i.estimated_cost_savings_inr.toLocaleString()}/mo</span>
+        </div>
+        <div class="breakdown-row">
+          <span style="color:var(--muted);">📦 Simulated Monthly Units</span>
+          <span style="font-weight:700;">${i.units_simulated.toLocaleString()}</span>
+        </div>
+        <div class="breakdown-row">
+          <span style="color:var(--muted);">Product CO₂ (baseline)</span>
+          <span>${b.product_co2_kg.toFixed(0)} kg</span>
+        </div>
+        <div class="breakdown-row">
+          <span style="color:var(--muted);">Product CO₂ (simulated)</span>
+          <span style="color:var(--accent);">${s.product_co2_kg.toFixed(0)} kg</span>
+        </div>
+        <div class="breakdown-row">
+          <span style="color:var(--muted);">Utility CO₂ (baseline)</span>
+          <span>${b.utility_co2_kg.toFixed(0)} kg</span>
+        </div>
+        <div class="breakdown-row">
+          <span style="color:var(--muted);">Utility CO₂ (simulated)</span>
+          <span style="color:var(--accent);">${s.utility_co2_kg.toFixed(0)} kg</span>
+        </div>
+
+        <div style="margin-top:16px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);font-size:12px;color:var(--muted);">
+          <b style="color:var(--text);">Emission Factors Used:</b><br>
+          Grid: 0.82 kg/kWh · Renewable: 0.05 kg/kWh · Diesel: 0.0525 kg/km · EV: 0.021 kg/km · Fuel: 2.68 kg/L · Courier: 0.18 kg/kg
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+
+window.onload = async () => {
+  await refreshDashboard();
+};
+</script>
+</body>
+</html>
