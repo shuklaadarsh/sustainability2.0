@@ -8,10 +8,6 @@ import pandas as pd
 from fastapi.responses import StreamingResponse
 import uuid
 import os
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.colors import grey, HexColor
 from datetime import datetime
 import base64
 from pydantic import BaseModel
@@ -534,75 +530,656 @@ def export_excel():
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=carbon_report.xlsx"})
 
+# ─────────────────────────────────────────
+# EXPORT PDF  — Premium B2B Report
+# ─────────────────────────────────────────
 
-# ─────────────────────────────────────────
-# EXPORT PDF
-# ─────────────────────────────────────────
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle, Paragraph,
+    Spacer, PageBreak, Image, HRFlowable, KeepTogether
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.colors import HexColor, white, black
+from reportlab.lib.units import mm
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+
+# ── Brand colours (match the dark UI) ─────────────────────────
+C_DARK    = HexColor("#0b0f1a")   # page background / cover
+C_SURFACE = HexColor("#1c2537")   # card / table header
+C_ACCENT  = HexColor("#22d3a5")   # teal highlight
+C_ACCENT2 = HexColor("#3b82f6")   # blue highlight
+C_WARN    = HexColor("#f59e0b")   # amber
+C_TEXT    = HexColor("#1e293b")   # body text (dark on white pages)
+C_MUTED   = HexColor("#64748b")   # secondary text
+C_LIGHT   = HexColor("#f1f5f9")   # light row background
+C_WHITE   = white
+C_SCOPE1  = HexColor("#ef4444")
+C_SCOPE2  = HexColor("#3b82f6")
+C_SCOPE3  = HexColor("#a855f7")
+
+
+def build_pdf_styles():
+    base = getSampleStyleSheet()
+
+    styles = {
+        "cover_title": ParagraphStyle(
+            "cover_title",
+            fontName="Helvetica-Bold", fontSize=32,
+            textColor=C_WHITE, leading=40, spaceAfter=8,
+        ),
+        "cover_sub": ParagraphStyle(
+            "cover_sub",
+            fontName="Helvetica", fontSize=14,
+            textColor=C_ACCENT, leading=20, spaceAfter=6,
+        ),
+        "cover_meta": ParagraphStyle(
+            "cover_meta",
+            fontName="Helvetica", fontSize=10,
+            textColor=HexColor("#94a3b8"), leading=16,
+        ),
+        "section_heading": ParagraphStyle(
+            "section_heading",
+            fontName="Helvetica-Bold", fontSize=14,
+            textColor=C_TEXT, leading=20,
+            spaceBefore=18, spaceAfter=6,
+            borderPad=0,
+        ),
+        "sub_heading": ParagraphStyle(
+            "sub_heading",
+            fontName="Helvetica-Bold", fontSize=11,
+            textColor=C_TEXT, leading=16,
+            spaceBefore=10, spaceAfter=4,
+        ),
+        "body": ParagraphStyle(
+            "body",
+            fontName="Helvetica", fontSize=9,
+            textColor=C_TEXT, leading=15, spaceAfter=6,
+        ),
+        "body_muted": ParagraphStyle(
+            "body_muted",
+            fontName="Helvetica", fontSize=8,
+            textColor=C_MUTED, leading=13, spaceAfter=4,
+        ),
+        "kpi_value": ParagraphStyle(
+            "kpi_value",
+            fontName="Helvetica-Bold", fontSize=22,
+            textColor=C_ACCENT, leading=26, alignment=TA_CENTER,
+        ),
+        "kpi_label": ParagraphStyle(
+            "kpi_label",
+            fontName="Helvetica", fontSize=8,
+            textColor=C_MUTED, leading=12, alignment=TA_CENTER,
+        ),
+        "footer": ParagraphStyle(
+            "footer",
+            fontName="Helvetica", fontSize=7,
+            textColor=C_MUTED, leading=10, alignment=TA_CENTER,
+        ),
+        "tag": ParagraphStyle(
+            "tag",
+            fontName="Helvetica-Bold", fontSize=7,
+            textColor=C_WHITE, leading=10, alignment=TA_CENTER,
+        ),
+        "table_header": ParagraphStyle(
+            "table_header",
+            fontName="Helvetica-Bold", fontSize=8,
+            textColor=C_WHITE, leading=11, alignment=TA_CENTER,
+        ),
+        "table_cell": ParagraphStyle(
+            "table_cell",
+            fontName="Helvetica", fontSize=8,
+            textColor=C_TEXT, leading=11,
+        ),
+        "table_cell_r": ParagraphStyle(
+            "table_cell_r",
+            fontName="Helvetica", fontSize=8,
+            textColor=C_TEXT, leading=11, alignment=TA_RIGHT,
+        ),
+        "methodology": ParagraphStyle(
+            "methodology",
+            fontName="Helvetica", fontSize=7.5,
+            textColor=C_MUTED, leading=12,
+            leftIndent=8, spaceAfter=3,
+        ),
+    }
+    return styles
+
+
+def cover_page(elems, styles, generated_at, total_co2, top_product, total_units):
+    """Full dark cover page."""
+    from reportlab.platypus import Table as RLTable, TableStyle as RLTableStyle
+
+    W, H = A4
+
+    # Dark cover background table (full page width)
+    cover_bg = RLTable(
+        [[Paragraph("", styles["body"])]],
+        colWidths=[W - 40*mm],
+        rowHeights=[60*mm],
+    )
+    cover_bg.setStyle(RLTableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), C_DARK),
+        ("LEFTPADDING",  (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING",   (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING",(0, 0), (-1, -1), 0),
+    ]))
+
+    # Logo row
+    logo_row = RLTable(
+        [[Paragraph("🌿  CarbonSight", ParagraphStyle(
+            "logo", fontName="Helvetica-Bold", fontSize=13,
+            textColor=C_ACCENT, leading=16))]],
+        colWidths=[W - 40*mm],
+    )
+    logo_row.setStyle(RLTableStyle([
+        ("BACKGROUND",   (0,0), (-1,-1), C_DARK),
+        ("TOPPADDING",   (0,0), (-1,-1), 14),
+        ("BOTTOMPADDING",(0,0), (-1,-1), 0),
+        ("LEFTPADDING",  (0,0), (-1,-1), 8),
+    ]))
+
+    elems.append(logo_row)
+    elems.append(Spacer(1, 10*mm))
+
+    # Main title block
+    title_tbl = RLTable(
+        [[Paragraph("Sustainability<br/>Emissions Report", styles["cover_title"])],
+         [Paragraph("Carbon Footprint Analysis &amp; Green Intervention Modelling", styles["cover_sub"])],
+         [Paragraph(f"Generated: {generated_at} &nbsp;|&nbsp; Powered by Google Cloud BigQuery", styles["cover_meta"])]],
+        colWidths=[W - 40*mm],
+    )
+    title_tbl.setStyle(RLTableStyle([
+        ("BACKGROUND",    (0,0), (-1,-1), C_DARK),
+        ("LEFTPADDING",   (0,0), (-1,-1), 8),
+        ("TOPPADDING",    (0,0), (-1,-1), 4),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+    elems.append(title_tbl)
+    elems.append(Spacer(1, 10*mm))
+
+    # Teal divider line
+    elems.append(HRFlowable(width="100%", thickness=2, color=C_ACCENT, spaceAfter=8*mm))
+
+    # KPI summary cards on cover
+    kpi_data = [[
+        Paragraph(f"{total_co2:,.1f}", styles["kpi_value"]),
+        Paragraph(f"{total_units:,}",  styles["kpi_value"]),
+        Paragraph(top_product,          ParagraphStyle("kpip", fontName="Helvetica-Bold",
+                                         fontSize=14, textColor=C_ACCENT,
+                                         leading=18, alignment=TA_CENTER)),
+    ], [
+        Paragraph("kg CO2 Total Emissions", styles["kpi_label"]),
+        Paragraph("Total Units Sold",        styles["kpi_label"]),
+        Paragraph("Top Emitting Product",    styles["kpi_label"]),
+    ]]
+    kpi_tbl = RLTable(kpi_data, colWidths=[(W - 40*mm) / 3] * 3, rowHeights=[18*mm, 8*mm])
+    kpi_tbl.setStyle(RLTableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), C_SURFACE),
+        ("BACKGROUND",    (0, 0), (0, -1),  HexColor("#1a2e26")),
+        ("BACKGROUND",    (1, 0), (1, -1),  HexColor("#1a2231")),
+        ("BACKGROUND",    (2, 0), (2, -1),  HexColor("#1e1a2e")),
+        ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LINEAFTER",     (0, 0), (1, -1),  0.5, HexColor("#2d3a4a")),
+        ("ROUNDEDCORNERS",(0, 0), (-1, -1), [6, 6, 6, 6]),
+    ]))
+    elems.append(kpi_tbl)
+    elems.append(Spacer(1, 8*mm))
+
+    # Disclaimer strip
+    disc_tbl = RLTable(
+        [[Paragraph(
+            "This report is generated from operational data uploaded to CarbonSight. "
+            "Emission factors follow CEA India 2024, GLEC Framework 2024, IPCC AR6, and GHG Protocol standards. "
+            "Figures represent Scope 1, 2 &amp; 3 emissions per the GHG Protocol Corporate Standard.",
+            styles["cover_meta"]
+        )]],
+        colWidths=[W - 40*mm],
+    )
+    disc_tbl.setStyle(RLTableStyle([
+        ("BACKGROUND",   (0,0),(-1,-1), HexColor("#111827")),
+        ("LEFTPADDING",  (0,0),(-1,-1), 10),
+        ("RIGHTPADDING", (0,0),(-1,-1), 10),
+        ("TOPPADDING",   (0,0),(-1,-1), 8),
+        ("BOTTOMPADDING",(0,0),(-1,-1), 8),
+    ]))
+    elems.append(disc_tbl)
+    elems.append(PageBreak())
+
+
+def section_header(elems, styles, text):
+    elems.append(HRFlowable(width="100%", thickness=1, color=C_ACCENT, spaceAfter=2*mm))
+    elems.append(Paragraph(text, styles["section_heading"]))
+
+
+def scope_summary_table(elems, styles, scope1, scope2, scope3, page_width):
+    total = scope1 + scope2 + scope3 or 1
+
+    def scope_cell(label, color, value, pct, desc):
+        from reportlab.platypus import Table as T2, TableStyle as TS2
+        inner = T2(
+            [[Paragraph(label, ParagraphStyle("sl", fontName="Helvetica-Bold",
+                        fontSize=8, textColor=color, leading=10))],
+             [Paragraph(f"{value:,.1f} kg", ParagraphStyle("sv", fontName="Helvetica-Bold",
+                        fontSize=13, textColor=C_TEXT, leading=16))],
+             [Paragraph(f"{pct:.1f}% of total", ParagraphStyle("sp", fontName="Helvetica",
+                        fontSize=7, textColor=C_MUTED, leading=10))],
+             [Paragraph(desc, ParagraphStyle("sd", fontName="Helvetica",
+                        fontSize=7, textColor=C_MUTED, leading=10))]],
+            colWidths=[(page_width - 40*mm) / 3 - 4*mm],
+        )
+        inner.setStyle(TS2([
+            ("TOPPADDING",    (0,0),(-1,-1), 3),
+            ("BOTTOMPADDING", (0,0),(-1,-1), 2),
+            ("LEFTPADDING",   (0,0),(-1,-1), 10),
+            ("BACKGROUND",    (0,0),(-1,-1), C_LIGHT),
+        ]))
+        return inner
+
+    col_w = (page_width - 40*mm) / 3
+
+    from reportlab.platypus import Table as T3, TableStyle as TS3
+    row = T3([[
+        scope_cell("SCOPE 1 — Direct Combustion",   C_SCOPE1, scope1, scope1/total*100, "Own fleet fuel & on-site combustion"),
+        scope_cell("SCOPE 2 — Purchased Electricity", C_SCOPE2, scope2, scope2/total*100, "Grid & renewable electricity consumed"),
+        scope_cell("SCOPE 3 — Value Chain",           C_SCOPE3, scope3, scope3/total*100, "Outsourced logistics & courier"),
+    ]], colWidths=[col_w]*3)
+    row.setStyle(TS3([
+        ("ALIGN",         (0,0),(-1,-1), "LEFT"),
+        ("VALIGN",        (0,0),(-1,-1), "TOP"),
+        ("LEFTPADDING",   (0,0),(-1,-1), 2),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 2),
+        ("TOPPADDING",    (0,0),(-1,-1), 0),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 0),
+    ]))
+    elems.append(row)
+    elems.append(Spacer(1, 4*mm))
+
 
 @app.post("/export/pdf")
 async def export_pdf(request: Request):
+    import json as _json
     data = await request.json()
 
     def decode_image(b64):
         if not b64:
             return None
-        _, enc = b64.split(",", 1)
-        return io.BytesIO(base64.b64decode(enc))
+        try:
+            _, enc = b64.split(",", 1)
+            return io.BytesIO(base64.b64decode(enc))
+        except Exception:
+            return None
+
+    trend_buf = decode_image(data.get("trend"))
+    bill_buf  = decode_image(data.get("bill"))
+    total_buf = decode_image(data.get("total"))
 
     af               = get_active_factors()
     energy_factor    = af["grid_electricity"]
     transport_factor = af["freight_truck"]
-    bq               = bigquery.Client()
-    rows             = list(bq.query(f"""
-        SELECT IFNULL(p.product_name, o.product_id) AS product,
-               IFNULL(p.category, 'Unknown')         AS category,
-               SUM(o.units_sold)                                                  AS units,
-               ROUND(SUM(o.energy_kwh   * {energy_factor}),    2)                AS energy_co2,
-               ROUND(SUM(o.transport_km * {transport_factor}), 2)                AS transport_co2,
-               ROUND(SUM(o.energy_kwh   * {energy_factor}
-                       + o.transport_km * {transport_factor}), 2)                AS total_co2
+    fuel_factor      = af["fuel"]
+    courier_factor   = af["courier"]
+
+    bq = bigquery.Client()
+
+    # ── Fetch product metrics ─────────────────────────────
+    prod_rows = list(bq.query(f"""
+        SELECT
+            IFNULL(p.product_name, o.product_id)  AS product,
+            IFNULL(p.category, 'Unknown')          AS category,
+            SUM(o.units_sold)                                                   AS units,
+            ROUND(SUM(o.energy_kwh   * {energy_factor}),    2)                 AS energy_co2,
+            ROUND(SUM(o.transport_km * {transport_factor}), 2)                 AS transport_co2,
+            ROUND(SUM(o.energy_kwh   * {energy_factor}
+                    + o.transport_km * {transport_factor}), 2)                 AS total_co2
         FROM sustainability_ds.operations o
         LEFT JOIN sustainability_ds.products p ON o.product_id = p.product_id
         GROUP BY product, category ORDER BY total_co2 DESC
     """).result())
 
+    # ── Fetch utility bill totals ─────────────────────────
+    bill_rows = list(bq.query("""
+        SELECT 
+            bill_type, 
+            SUM(estimated_co2) AS co2,
+            SUM(units) AS units
+        FROM sustainability_ds.utility_bills
+        WHERE estimated_co2 IS NOT NULL
+        GROUP BY bill_type
+    """).result())
+    bill_map = {
+        r.bill_type: {
+            "co2":   float(r.co2   or 0),
+            "units": float(r.units or 0)
+        } for r in bill_rows
+    }
+    # ── Fetch monthly trend ───────────────────────────────
+    trend_rows = list(bq.query(f"""
+        SELECT FORMAT_DATE('%b %Y', record_date) AS month,
+               ROUND(SUM(energy_kwh * {energy_factor} + transport_km * {transport_factor}), 1) AS product_co2
+        FROM sustainability_ds.operations
+        GROUP BY FORMAT_DATE('%b %Y', record_date), record_date
+        ORDER BY MIN(record_date)
+        LIMIT 12
+    """).result())
+
+    # ── Compute summary KPIs ──────────────────────────────
+    total_product_co2 = sum(float(r.total_co2 or 0) for r in prod_rows)
+    total_utility_co2 = sum(v["co2"] for v in bill_map.values())
+    total_co2         = total_product_co2 + total_utility_co2
+    total_units       = sum(int(r.units or 0) for r in prod_rows)
+    top_product       = prod_rows[0].product if prod_rows else "—"
+    co2_per_unit      = total_product_co2 / total_units if total_units else 0
+
+    # GHG Scopes (product only — bills classified separately)
+    scope1_co2 = bill_map.get("fuel",        {}).get("co2", 0)
+    scope2_co2 = total_product_co2 + bill_map.get("electricity", {}).get("co2", 0)
+    scope3_co2 = bill_map.get("courier",     {}).get("co2", 0)
+
+    generated_at = datetime.now().strftime("%d %B %Y, %H:%M")
+    styles       = build_pdf_styles()
+    W, H         = A4
+
+    # ── Build document ────────────────────────────────────
     buffer = io.BytesIO()
-    doc    = SimpleDocTemplate(buffer, pagesize=A4)
-    styles = getSampleStyleSheet()
-    elems  = []
-    elems.append(Paragraph("CarbonSight — Sustainability Emissions Report", styles["Title"]))
-    elems.append(Spacer(1, 15))
-    elems.append(Paragraph(f"Generated: {datetime.now().strftime('%d %B %Y, %H:%M')}", styles["Normal"]))
-    elems.append(Spacer(1, 20))
-    for title, buf in [("Emission Trends", decode_image(data.get("trend"))),
-                       ("Utility Emissions", decode_image(data.get("bill"))),
-                       ("Total Carbon Footprint", decode_image(data.get("total")))]:
-        elems.append(Paragraph(title, styles["Heading2"]))
-        elems.append(Spacer(1, 10))
-        if buf:
-            elems.append(Image(buf, width=450, height=250))
-        elems.append(Spacer(1, 20))
-    elems.append(PageBreak())
-    table_data = [["Product", "Category", "Units", "Energy CO₂", "Transport CO₂", "Total CO₂"]]
-    for r in rows:
-        table_data.append([r.product, r.category, str(int(r.units or 0)),
-                           f"{(r.energy_co2 or 0):.2f}", f"{(r.transport_co2 or 0):.2f}", f"{(r.total_co2 or 0):.2f}"])
-    t = Table(table_data, repeatRows=1)
-    t.setStyle(TableStyle([
-        ("BACKGROUND",     (0,0), (-1,0),  HexColor("#1e293b")),
-        ("TEXTCOLOR",      (0,0), (-1,0),  HexColor("#ffffff")),
-        ("GRID",           (0,0), (-1,-1), 0.5, grey),
-        ("FONT",           (0,0), (-1,0),  "Helvetica-Bold"),
-        ("ALIGN",          (2,1), (-1,-1), "CENTER"),
-        ("ROWBACKGROUNDS", (0,1), (-1,-1), [HexColor("#f8fafc"), HexColor("#ffffff")]),
+    doc    = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        leftMargin=20*mm, rightMargin=20*mm,
+        topMargin=16*mm,  bottomMargin=16*mm,
+        title="CarbonSight Emissions Report",
+        author="CarbonSight",
+    )
+    elems = []
+
+    # ── PAGE 1: Cover ─────────────────────────────────────
+    cover_page(elems, styles, generated_at, total_co2, top_product, total_units)
+
+    # ── PAGE 2: Executive Summary ─────────────────────────
+    section_header(elems, styles, "01 · Executive Summary")
+
+    summary_text = (
+        f"This report summarises the carbon footprint of your operations for the current reporting period. "
+        f"Total emissions across all products and utility sources stand at "
+        f"<b>{total_co2:,.1f} kg CO2e</b>, comprising "
+        f"<b>{total_product_co2:,.1f} kg</b> from product operations (energy &amp; transport) and "
+        f"<b>{total_utility_co2:,.1f} kg</b> from utility bills (electricity, fuel &amp; courier). "
+        f"Across <b>{total_units:,} units sold</b>, the average carbon intensity is "
+        f"<b>{co2_per_unit:.3f} kg CO2e per unit</b>. "
+        f"The highest-emitting product line is <b>{top_product}</b>. "
+        f"Emissions are classified per the GHG Protocol Corporate Standard into Scope 1 (direct combustion), "
+        f"Scope 2 (purchased electricity), and Scope 3 (value-chain transport &amp; logistics)."
+    )
+    elems.append(Paragraph(summary_text, styles["body"]))
+    elems.append(Spacer(1, 5*mm))
+
+    # ── KPI row ───────────────────────────────────────────
+    from reportlab.platypus import Table as T, TableStyle as TS
+
+    col_w4 = (W - 40*mm) / 4
+    kpi2_data = [[
+        Paragraph(f"{total_co2:,.0f}", styles["kpi_value"]),
+        Paragraph(f"{total_product_co2:,.0f}", styles["kpi_value"]),
+        Paragraph(f"{total_utility_co2:,.0f}", styles["kpi_value"]),
+        Paragraph(f"{co2_per_unit:.3f}", styles["kpi_value"]),
+    ],[
+        Paragraph("Total CO2e (kg)",      styles["kpi_label"]),
+        Paragraph("Product CO2 (kg)",     styles["kpi_label"]),
+        Paragraph("Utility CO2 (kg)",     styles["kpi_label"]),
+        Paragraph("kg CO2 / Unit",        styles["kpi_label"]),
+    ]]
+    kpi2 = T(kpi2_data, colWidths=[col_w4]*4, rowHeights=[14*mm, 7*mm])
+    kpi2.setStyle(TS([
+        ("BACKGROUND",    (0,0),(-1,-1), C_LIGHT),
+        ("BACKGROUND",    (0,0),(0,-1),  HexColor("#ecfdf5")),
+        ("BACKGROUND",    (1,0),(1,-1),  HexColor("#eff6ff")),
+        ("BACKGROUND",    (2,0),(2,-1),  HexColor("#fefce8")),
+        ("BACKGROUND",    (3,0),(3,-1),  HexColor("#faf5ff")),
+        ("ALIGN",         (0,0),(-1,-1), "CENTER"),
+        ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
+        ("TOPPADDING",    (0,0),(-1,-1), 6),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 4),
+        ("LINEAFTER",     (0,0),(2,-1),  0.5, HexColor("#e2e8f0")),
     ]))
-    elems.append(t)
-    elems.append(Spacer(1, 20))
-    elems.append(Paragraph("Generated by CarbonSight — Powered by Google Cloud", styles["Italic"]))
+    elems.append(kpi2)
+    elems.append(Spacer(1, 6*mm))
+
+    # ── GHG Scope breakdown ───────────────────────────────
+    section_header(elems, styles, "02 · GHG Protocol Scope Breakdown")
+    elems.append(Paragraph(
+        "Emissions are categorised per the GHG Protocol Corporate Standard. "
+        "Scope 1 covers direct combustion (own fleet &amp; on-site fuel). "
+        "Scope 2 covers indirect emissions from purchased electricity. "
+        "Scope 3 covers all other indirect emissions including outsourced freight and courier logistics.",
+        styles["body"]
+    ))
+    elems.append(Spacer(1, 3*mm))
+    scope_summary_table(elems, styles, scope1_co2, scope2_co2, scope3_co2, W)
+
+    # ── Charts ────────────────────────────────────────────
+    section_header(elems, styles, "03 · Emissions Trend Analysis")
+    chart_w = (W - 40*mm)
+    if trend_buf:
+        elems.append(Image(trend_buf, width=chart_w, height=55*mm))
+    elems.append(Spacer(1, 2*mm))
+    elems.append(Paragraph(
+        "Monthly CO2 efficiency trend (kg CO2 per unit shipped). A downward trajectory indicates "
+        "improving operational efficiency. The 3-month rolling average smooths short-term volatility.",
+        styles["body_muted"]
+    ))
+
+    if bill_buf or total_buf:
+        elems.append(Spacer(1, 4*mm))
+        chart_half = (W - 44*mm) / 2
+        chart_row_data = [[
+            Image(bill_buf,  width=chart_half, height=50*mm) if bill_buf  else Paragraph("No utility data", styles["body_muted"]),
+            Image(total_buf, width=chart_half, height=50*mm) if total_buf else Paragraph("No footprint data", styles["body_muted"]),
+        ]]
+        chart_row = T(chart_row_data, colWidths=[chart_half + 2*mm, chart_half + 2*mm])
+        chart_row.setStyle(TS([
+            ("LEFTPADDING",  (0,0),(-1,-1), 0),
+            ("RIGHTPADDING", (0,0),(-1,-1), 0),
+            ("TOPPADDING",   (0,0),(-1,-1), 0),
+            ("BOTTOMPADDING",(0,0),(-1,-1), 0),
+            ("ALIGN",        (0,0),(-1,-1), "CENTER"),
+        ]))
+        elems.append(chart_row)
+        elems.append(Spacer(1, 1*mm))
+        cap_row = T([[
+            Paragraph("Utility Bill Emissions by Type (kg CO2/month)", styles["body_muted"]),
+            Paragraph("Total Company Carbon Footprint — Product vs Utility (kg CO2/month)", styles["body_muted"]),
+        ]], colWidths=[chart_half + 2*mm, chart_half + 2*mm])
+        cap_row.setStyle(TS([("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0)]))
+        elems.append(cap_row)
+
+    elems.append(PageBreak())
+
+    # ── PAGE 3: Product Breakdown ─────────────────────────
+    section_header(elems, styles, "04 · Product Emissions Breakdown")
+    elems.append(Paragraph(
+        "The table below shows per-product CO2 emissions calculated using the active emission factors. "
+        "Energy emissions are classified as Scope 2; transport emissions as Scope 3.",
+        styles["body"]
+    ))
+    elems.append(Spacer(1, 3*mm))
+
+    # Table header
+    prod_header = [
+        Paragraph("Product",        styles["table_header"]),
+        Paragraph("Category",       styles["table_header"]),
+        Paragraph("Units Sold",     styles["table_header"]),
+        Paragraph("Energy CO2 kg\n(Scope 2)", styles["table_header"]),
+        Paragraph("Transport CO2 kg\n(Scope 3)", styles["table_header"]),
+        Paragraph("Total CO2 kg",   styles["table_header"]),
+        Paragraph("% of Total",     styles["table_header"]),
+    ]
+    prod_table_data = [prod_header]
+    for r in prod_rows:
+        pct = (float(r.total_co2 or 0) / total_product_co2 * 100) if total_product_co2 else 0
+        prod_table_data.append([
+            Paragraph(r.product,                  styles["table_cell"]),
+            Paragraph(r.category,                 styles["table_cell"]),
+            Paragraph(f"{int(r.units or 0):,}",   styles["table_cell_r"]),
+            Paragraph(f"{float(r.energy_co2 or 0):,.2f}",    styles["table_cell_r"]),
+            Paragraph(f"{float(r.transport_co2 or 0):,.2f}", styles["table_cell_r"]),
+            Paragraph(f"{float(r.total_co2 or 0):,.2f}",     styles["table_cell_r"]),
+            Paragraph(f"{pct:.1f}%",              styles["table_cell_r"]),
+        ])
+
+    col_widths = [45*mm, 28*mm, 22*mm, 26*mm, 28*mm, 24*mm, 18*mm]
+    prod_tbl = T(prod_table_data, colWidths=col_widths, repeatRows=1)
+    prod_tbl.setStyle(TS([
+        ("BACKGROUND",    (0, 0), (-1, 0),  C_SURFACE),
+        ("TEXTCOLOR",     (0, 0), (-1, 0),  C_WHITE),
+        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [C_WHITE, C_LIGHT]),
+        ("GRID",          (0, 0), (-1, -1), 0.3, HexColor("#e2e8f0")),
+        ("LINEBELOW",     (0, 0), (-1, 0),  1.5, C_ACCENT),
+        ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("LEFTPADDING",   (0, 0), (1, -1),  6),
+    ]))
+    elems.append(prod_tbl)
+
+    # ── Utility Bill Summary ──────────────────────────────
+    if bill_map:
+        elems.append(Spacer(1, 6*mm))
+        section_header(elems, styles, "05 · Utility Bill Emissions Summary")
+        bill_header = [
+            Paragraph("Bill Type",       styles["table_header"]),
+            Paragraph("Units Consumed",  styles["table_header"]),
+            Paragraph("Emission Factor", styles["table_header"]),
+            Paragraph("CO2 Emitted (kg)",styles["table_header"]),
+        ]
+        bill_table_data = [bill_header]
+        factor_labels   = {
+            "electricity": (f"{energy_factor} kg/kWh", "kWh"),
+            "fuel":        (f"{fuel_factor} kg/L",     "litres"),
+            "courier":     (f"{courier_factor} kg/kg", "kg"),
+        }
+        for btype, vals in bill_map.items():
+            flabel, ulabel = factor_labels.get(btype, ("—", "units"))
+            bill_table_data.append([
+                Paragraph(btype.capitalize(),              styles["table_cell"]),
+                Paragraph(f"{vals['units']:,.1f} {ulabel}",styles["table_cell_r"]),
+                Paragraph(flabel,                          styles["table_cell_r"]),
+                Paragraph(f"{vals['co2']:,.2f}",           styles["table_cell_r"]),
+            ])
+        bill_tbl = T(bill_table_data, colWidths=[40*mm, 45*mm, 45*mm, 45*mm], repeatRows=1)
+        bill_tbl.setStyle(TS([
+            ("BACKGROUND",    (0, 0), (-1, 0),  C_SURFACE),
+            ("TEXTCOLOR",     (0, 0), (-1, 0),  C_WHITE),
+            ("ROWBACKGROUNDS",(0, 1), (-1, -1), [C_WHITE, C_LIGHT]),
+            ("GRID",          (0, 0), (-1, -1), 0.3, HexColor("#e2e8f0")),
+            ("LINEBELOW",     (0, 0), (-1, 0),  1.5, C_ACCENT),
+            ("ALIGN",         (0, 1), (-1, -1), "CENTER"),
+            ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING",    (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        elems.append(bill_tbl)
+
+    elems.append(PageBreak())
+
+    # ── PAGE 4: Methodology & Factors ────────────────────
+    section_header(elems, styles, "06 · Emission Factors &amp; Methodology")
+    elems.append(Paragraph(
+        "All CO2 equivalent figures are calculated using the emission factors below. "
+        "Factors are configurable per organisation and default to the values shown. "
+        "Custom factors are noted where applied.",
+        styles["body"]
+    ))
+    elems.append(Spacer(1, 3*mm))
+
+    is_custom = af != DEFAULT_FACTORS
+    factor_rows = [
+        ["Grid Electricity",  f"{af['grid_electricity']} kg CO2/kWh",  "CEA India 2024",         "Scope 2"],
+        ["Renewable Energy",  f"{af['renewable_energy']} kg CO2/kWh",  "IPCC SRREN lifecycle",   "Scope 2"],
+        ["Freight Truck",     f"{af['freight_truck']} kg CO2/km",      "GLEC Framework 2024",    "Scope 3"],
+        ["EV Fleet",          f"{af['ev_transport']} kg CO2/km",       "BEV India Grid 2024",    "Scope 3"],
+        ["Diesel / Petrol",   f"{af['fuel']} kg CO2/litre",            "IPCC AR6 (fixed)",       "Scope 1"],
+        ["Courier / Parcel",  f"{af['courier']} kg CO2/kg shipped",    "GHG Protocol 2023",      "Scope 3"],
+    ]
+    meth_header = [
+        Paragraph("Factor",          styles["table_header"]),
+        Paragraph("Value Applied",   styles["table_header"]),
+        Paragraph("Source",          styles["table_header"]),
+        Paragraph("GHG Scope",       styles["table_header"]),
+    ]
+    meth_data = [meth_header]
+    for row in factor_rows:
+        meth_data.append([Paragraph(c, styles["table_cell"]) for c in row])
+
+    meth_tbl = T(meth_data, colWidths=[45*mm, 45*mm, 65*mm, 25*mm], repeatRows=1)
+    meth_tbl.setStyle(TS([
+        ("BACKGROUND",    (0, 0), (-1, 0),  C_SURFACE),
+        ("TEXTCOLOR",     (0, 0), (-1, 0),  C_WHITE),
+        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [C_WHITE, C_LIGHT]),
+        ("GRID",          (0, 0), (-1, -1), 0.3, HexColor("#e2e8f0")),
+        ("LINEBELOW",     (0, 0), (-1, 0),  1.5, C_ACCENT),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 6),
+    ]))
+    elems.append(meth_tbl)
+    elems.append(Spacer(1, 3*mm))
+
+    if is_custom:
+        elems.append(Paragraph(
+            "⚠  Custom emission factors are active for this organisation. "
+            "Values shown above reflect the organisation-specific configuration.",
+            ParagraphStyle("warn", fontName="Helvetica-Bold", fontSize=8,
+                           textColor=C_WARN, leading=12, leftIndent=4)
+        ))
+
+    elems.append(Spacer(1, 6*mm))
+    section_header(elems, styles, "07 · Standards &amp; Compliance Notes")
+
+    standards = [
+        ("GHG Protocol Corporate Standard",
+         "The primary framework used to classify emissions into Scope 1, 2, and 3 categories. "
+         "www.ghgprotocol.org"),
+        ("CEA India Emission Factor 2024",
+         "Grid electricity emission factor for India published by the Central Electricity Authority. "
+         "Factor: 0.82 kg CO2/kWh (default)."),
+        ("GLEC Framework 2024",
+         "Global Logistics Emissions Council framework for transport emission calculations. "
+         "Freight truck default: 0.0525 kg CO2/km."),
+        ("IPCC AR6",
+         "Sixth Assessment Report of the Intergovernmental Panel on Climate Change. "
+         "Diesel combustion factor: 2.68 kg CO2/litre (fixed, not region-dependent)."),
+        ("IPCC SRREN",
+         "Special Report on Renewable Energy Sources. "
+         "Solar/wind lifecycle factor: 0.05 kg CO2/kWh."),
+    ]
+    for title, desc in standards:
+        elems.append(Paragraph(f"<b>{title}</b>", styles["methodology"]))
+        elems.append(Paragraph(desc, styles["methodology"]))
+        elems.append(Spacer(1, 2*mm))
+
+    # ── Footer ────────────────────────────────────────────
+    elems.append(Spacer(1, 8*mm))
+    elems.append(HRFlowable(width="100%", thickness=0.5, color=C_MUTED))
+    elems.append(Spacer(1, 2*mm))
+    elems.append(Paragraph(
+        f"CarbonSight Sustainability Report  ·  Generated {generated_at}  ·  "
+        "Powered by Google Cloud BigQuery  ·  carbonsight.app",
+        styles["footer"]
+    ))
+
     doc.build(elems)
     buffer.seek(0)
-    return StreamingResponse(buffer, media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=carbonsight_report.pdf"})
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=carbonsight_report.pdf"}
+    )
 
 
 # ═══════════════════════════════════════════
