@@ -546,6 +546,156 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    /* ─── SETTINGS / FACTOR CARDS ────────────────────── */
+    .factor-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      transition: border-color 0.2s;
+    }
+
+    .factor-card:focus-within {
+      border-color: var(--accent);
+    }
+
+    .factor-icon {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .factor-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+
+    .factor-unit {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .factor-source {
+      font-size: 10px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      letter-spacing: 0.3px;
+    }
+
+    .factor-default-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .factor-default-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .factor-card input[type="number"] {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      text-align: right;
+    }
+
+    .factor-card input[type="number"].changed {
+      border-color: var(--warn);
+      color: var(--warn);
+    }
+
+    #settings-banner.success {
+      background: rgba(34,211,165,0.1);
+      border: 1px solid rgba(34,211,165,0.3);
+      color: var(--accent);
+      display: flex !important;
+    }
+
+    #settings-banner.error {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: var(--danger);
+      display: flex !important;
+    }
+
+    /* ─── SCOPE LABELS ────────────────────────────────── */
+    .scope-pill {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      letter-spacing: 0.3px;
+      vertical-align: middle;
+    }
+    .scope1 { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .scope2 { background: rgba(59,130,246,0.15);   color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .scope3 { background: rgba(168,85,247,0.15);   color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+
+    /* ─── SCENARIO CARDS ──────────────────────────────── */
+    .scenario-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.15s;
+      cursor: pointer;
+    }
+    .scenario-card:hover { border-color: var(--accent); }
+    .scenario-card.active-scenario { border-color: var(--accent); background: rgba(34,211,165,0.05); }
+
+    .scenario-meta { flex: 1; min-width: 0; }
+    .scenario-name { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .scenario-desc { font-size: 11px; color: var(--muted); }
+    .scenario-stats { display: flex; gap: 16px; }
+    .scenario-stat { text-align: center; }
+    .scenario-stat-val { font-size: 14px; font-weight: 700; font-family: var(--font-mono); }
+    .scenario-stat-lbl { font-size: 10px; color: var(--muted); }
+
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    /* ─── SCOPE SUMMARY BAR ───────────────────────────── */
+    .scope-summary {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: var(--surface2);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .scope-block {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      border-radius: var(--radius-sm);
+    }
+    .scope-block-label { font-size: 10px; font-family: var(--font-mono); margin-bottom: 4px; }
+    .scope-block-val { font-size: 16px; font-weight: 700; font-family: var(--font-mono); }
+    .scope-block-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
   </style>
 </head>
 
@@ -593,6 +743,9 @@
       </button>
 
       <div class="nav-section">System</div>
+      <button class="nav-item" onclick="showSection('settings', this)">
+        <span class="nav-icon">⚙️</span> Settings
+      </button>
       <button class="nav-item" style="color: var(--danger);" onclick="resetAll()">
         <span class="nav-icon">🗑️</span> Reset Data
       </button>
@@ -700,8 +853,14 @@
                 <th>Product</th>
                 <th>Category</th>
                 <th>Units Sold</th>
-                <th>Energy CO₂ (kg)</th>
-                <th>Transport CO₂ (kg)</th>
+                <th>
+                  <span class="scope-pill scope2">Scope 2</span>
+                  Energy CO₂ (kg)
+                </th>
+                <th>
+                  <span class="scope-pill scope3">Scope 3</span>
+                  Transport CO₂ (kg)
+                </th>
                 <th>Total CO₂ (kg)</th>
                 <th>Data Sources</th>
               </tr>
@@ -822,11 +981,45 @@
         </div>
       </div>
 
+      <!-- Save Scenario Panel -->
+      <div class="panel" style="margin-bottom:20px;display:none;" id="save-scenario-bar">
+        <div class="panel-header">
+          <div class="panel-title">Save This Scenario</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2;">
+            <label>Scenario Name</label>
+            <input type="text" id="scenario-name" placeholder="e.g. EV Fleet + 50% Solar by Q3 2026">
+          </div>
+          <div class="form-group" style="flex:2;">
+            <label>Description (optional)</label>
+            <input type="text" id="scenario-desc" placeholder="e.g. Aggressive green transition plan">
+          </div>
+          <button class="btn btn-primary" onclick="saveScenario()" style="margin-top:auto;">
+            💾 Save Scenario
+          </button>
+        </div>
+      </div>
+
       <!-- Results placeholder -->
       <div id="sim-results">
         <div class="sim-empty">
           <div class="big">🔬</div>
           Adjust the levers above to see projected CO₂ impact in real time.
+        </div>
+      </div>
+
+      <!-- Saved Scenarios Panel -->
+      <div class="panel" style="margin-top:20px;">
+        <div class="panel-header">
+          <div class="panel-title">Saved Scenarios</div>
+          <button class="btn btn-secondary btn-sm" onclick="loadScenarioList()">↺ Refresh</button>
+        </div>
+        <div id="scenario-list">
+          <div class="sim-empty" style="padding:24px;">
+            <div style="font-size:24px;margin-bottom:6px;">📁</div>
+            No saved scenarios yet. Run a simulation and save it above.
+          </div>
         </div>
       </div>
 
@@ -915,6 +1108,181 @@
 
     </section>
 
+
+    <!-- ═══════════════════════════════════════
+         SETTINGS SECTION
+    ═══════════════════════════════════════ -->
+    <section class="section" id="section-settings">
+
+      <!-- Status Banner -->
+      <div id="settings-banner" style="display:none;margin-bottom:20px;padding:14px 20px;border-radius:var(--radius);font-size:13px;align-items:center;gap:12px;"></div>
+
+      <!-- Emission Factors Panel -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-header">
+          <div class="panel-title">Emission Factors</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <span id="factors-status-badge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-family:var(--font-mono);">Loading...</span>
+            <button class="btn btn-secondary btn-sm" onclick="resetFactors()">↺ Restore Defaults</button>
+          </div>
+        </div>
+
+        <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.7;">
+          These factors convert raw activity data (kWh, km, litres) into CO₂ equivalent kilograms.
+          They are used across <b style="color:var(--text);">all calculations</b> — metrics, trends, simulator, exports, and PDF reports.
+          Changing them takes effect immediately for all future calculations.
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
+
+          <!-- Grid Electricity -->
+          <div class="factor-card">
+            <div class="factor-icon">⚡</div>
+            <div class="factor-label">Grid Electricity</div>
+            <div class="factor-unit">kg CO₂ per kWh consumed</div>
+            <div class="factor-source" id="src_grid">Default: CEA India 2024</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+              <input type="number" id="f_grid" step="0.001" min="0.001" max="5" style="flex:1;">
+              <span class="factor-default-btn" onclick="resetSingle('f_grid', 0.82)">0.82</span>
+            </div>
+          </div>
+
+          <!-- Renewable Energy -->
+          <div class="factor-card">
+            <div class="factor-icon">☀️</div>
+            <div class="factor-label">Renewable Energy</div>
+            <div class="factor-unit">kg CO₂ per kWh (solar/wind)</div>
+            <div class="factor-source" id="src_renewable">Default: Solar/Wind lifecycle</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+              <input type="number" id="f_renewable" step="0.001" min="0" max="1" style="flex:1;">
+              <span class="factor-default-btn" onclick="resetSingle('f_renewable', 0.05)">0.05</span>
+            </div>
+          </div>
+
+          <!-- Freight Truck -->
+          <div class="factor-card">
+            <div class="factor-icon">🚚</div>
+            <div class="factor-label">Freight Truck (Diesel)</div>
+            <div class="factor-unit">kg CO₂ per km transported</div>
+            <div class="factor-source" id="src_truck">Default: GLEC Framework 2024</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+              <input type="number" id="f_truck" step="0.0001" min="0.001" max="1" style="flex:1;">
+              <span class="factor-default-btn" onclick="resetSingle('f_truck', 0.0525)">0.0525</span>
+            </div>
+          </div>
+
+          <!-- EV Transport -->
+          <div class="factor-card">
+            <div class="factor-icon">🔋</div>
+            <div class="factor-label">EV Fleet</div>
+            <div class="factor-unit">kg CO₂ per km (BEV on grid)</div>
+            <div class="factor-source" id="src_ev">Default: BEV India grid</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+              <input type="number" id="f_ev" step="0.001" min="0" max="0.5" style="flex:1;">
+              <span class="factor-default-btn" onclick="resetSingle('f_ev', 0.021)">0.021</span>
+            </div>
+          </div>
+
+          <!-- Fuel -->
+          <div class="factor-card">
+            <div class="factor-icon">⛽</div>
+            <div class="factor-label">Diesel / Petrol Fuel</div>
+            <div class="factor-unit">kg CO₂ per litre burned</div>
+            <div class="factor-source" id="src_fuel">Default: IPCC AR6</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+              <input type="number" id="f_fuel" step="0.01" min="0.1" max="10" style="flex:1;">
+              <span class="factor-default-btn" onclick="resetSingle('f_fuel', 2.68)">2.68</span>
+            </div>
+          </div>
+
+          <!-- Courier -->
+          <div class="factor-card">
+            <div class="factor-icon">📦</div>
+            <div class="factor-label">Courier / Parcel</div>
+            <div class="factor-unit">kg CO₂ per kg shipped</div>
+            <div class="factor-source" id="src_courier">Default: GHG Protocol</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+              <input type="number" id="f_courier" step="0.001" min="0.001" max="5" style="flex:1;">
+              <span class="factor-default-btn" onclick="resetSingle('f_courier', 0.18)">0.18</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Save bar -->
+        <div style="display:flex;align-items:center;gap:14px;padding-top:16px;border-top:1px solid var(--border);">
+          <button class="btn btn-primary" onclick="saveFactors()">💾 Save & Apply Factors</button>
+          <button class="btn btn-secondary" onclick="loadSettings()">↺ Discard Changes</button>
+          <span style="font-size:12px;color:var(--muted);">Changes apply immediately — no restart needed.</span>
+        </div>
+      </div>
+
+      <!-- Reference Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Industry Reference Values</div>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Use these published benchmarks to validate your custom values against industry standards.</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Factor</th>
+                <th>Our Default</th>
+                <th>India (Avg)</th>
+                <th>Global (Avg)</th>
+                <th>Best-in-class</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Grid Electricity</td>
+                <td><span class="badge badge-green">0.82 kg/kWh</span></td>
+                <td>0.82 kg/kWh</td>
+                <td>0.49 kg/kWh</td>
+                <td>0.05 kg/kWh (renewable)</td>
+                <td style="color:var(--muted);font-size:12px;">CEA India 2024</td>
+              </tr>
+              <tr>
+                <td>Freight Truck</td>
+                <td><span class="badge badge-green">0.0525 kg/km</span></td>
+                <td>0.055 kg/km</td>
+                <td>0.062 kg/km</td>
+                <td>0.021 kg/km (EV)</td>
+                <td style="color:var(--muted);font-size:12px;">GLEC Framework 2024</td>
+              </tr>
+              <tr>
+                <td>Diesel Fuel</td>
+                <td><span class="badge badge-green">2.68 kg/L</span></td>
+                <td>2.68 kg/L</td>
+                <td>2.68 kg/L</td>
+                <td>—</td>
+                <td style="color:var(--muted);font-size:12px;">IPCC AR6 (fixed)</td>
+              </tr>
+              <tr>
+                <td>Courier Parcel</td>
+                <td><span class="badge badge-green">0.18 kg/kg</span></td>
+                <td>0.20 kg/kg</td>
+                <td>0.15 kg/kg</td>
+                <td>0.08 kg/kg (rail)</td>
+                <td style="color:var(--muted);font-size:12px;">GHG Protocol 2023</td>
+              </tr>
+              <tr>
+                <td>Renewable Energy</td>
+                <td><span class="badge badge-green">0.05 kg/kWh</span></td>
+                <td>0.05 kg/kWh</td>
+                <td>0.04 kg/kWh</td>
+                <td>0.02 kg/kWh (wind)</td>
+                <td style="color:var(--muted);font-size:12px;">IPCC SRREN lifecycle</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div><!-- /app-shell -->
 
@@ -925,10 +1293,11 @@
 ═══════════════════════════════════════════ */
 
 const PAGE_META = {
-  dashboard:  { title: 'Dashboard',      sub: 'Live emissions overview' },
-  simulation: { title: 'CO₂ Simulator',  sub: 'Model green interventions' },
-  upload:     { title: 'Upload Data',    sub: 'CSV & utility bill ingestion' },
-  history:    { title: 'Upload History', sub: 'Audit trail of all uploads' },
+  dashboard:  { title: 'Dashboard',        sub: 'Live emissions overview' },
+  simulation: { title: 'CO₂ Simulator',    sub: 'Model green interventions' },
+  upload:     { title: 'Upload Data',      sub: 'CSV & utility bill ingestion' },
+  history:    { title: 'Upload History',   sub: 'Audit trail of all uploads' },
+  settings:   { title: 'Settings',         sub: 'Customise emission factors & preferences' },
 };
 
 function showSection(name, navEl) {
@@ -939,7 +1308,9 @@ function showSection(name, navEl) {
   document.getElementById('pageTitle').textContent = PAGE_META[name].title;
   document.getElementById('pageSub').textContent   = PAGE_META[name].sub;
 
-  if (name === 'history') loadUploadHistory();
+  if (name === 'history')    loadUploadHistory();
+  if (name === 'settings')   loadSettings();
+  if (name === 'simulation') loadScenarioList();
 }
 
 /* ═══════════════════════════════════════════
@@ -1001,8 +1372,8 @@ function applyFilters() {
 }
 
 function clearFilters() {
-  document.getElementById('fromMonth').value     = '';
-  document.getElementById('toMonth').value       = '';
+  document.getElementById('fromMonth').value      = '';
+  document.getElementById('toMonth').value        = '';
   document.getElementById('categoryFilter').value = '';
   dashState = { from: null, to: null, category: null };
   loadMetrics(null);
@@ -1010,40 +1381,53 @@ function clearFilters() {
 
 /* ═══════════════════════════════════════════
    METRICS TABLE + KPI CARDS
+   FIX: Use correct field names from API response
 ═══════════════════════════════════════════ */
 
 async function loadMetrics(since = null) {
-  const url = since ? `/metrics?since=${since}` : '/metrics';
-  const res  = await fetch(url);
-  const json = await res.json();
-  const data = json.data || [];
+  try {
+    const url = since ? `/metrics?since=${since}` : '/metrics';
+    const res  = await fetch(url);
+    const json = await res.json();
+    const data = json.data || [];
 
-  let totalCo2 = 0, totalUnits = 0, topProduct = null;
-  let html = '';
+    let totalCo2 = 0, totalUnits = 0, topProduct = null;
+    let html = '';
 
-  data.forEach(row => {
-    totalCo2   += row.total_co2_kg;
-    totalUnits += row.total_units_sold;
-    if (!topProduct || row.total_co2_kg > topProduct.total_co2_kg) topProduct = row;
+    data.forEach(row => {
+      totalCo2   += row.total_co2_kg;
+      totalUnits += row.total_units_sold;
+      if (!topProduct || row.total_co2_kg > topProduct.total_co2_kg) topProduct = row;
 
-    html += `
-      <tr>
-        <td><b>${row.product_name}</b></td>
-        <td><span class="badge badge-blue">${row.category}</span></td>
-        <td>${row.total_units_sold.toLocaleString()}</td>
-        <td>${row.energy_co2_kg.toFixed(2)}</td>
-        <td>${row.transport_co2_kg.toFixed(2)}</td>
-        <td><b>${row.total_co2_kg.toFixed(2)}</b></td>
-        <td style="font-size:11px;color:var(--muted);">
-          ${row.energy_ref || '—'}<br>${row.transport_ref || '—'}
-        </td>
-      </tr>`;
-  });
+      // FIX: Use energy_co2_kg and transport_co2_kg (consistent with backend)
+      html += `
+        <tr>
+          <td><b>${row.product_name}</b></td>
+          <td><span class="badge badge-blue">${row.category}</span></td>
+          <td>${row.total_units_sold.toLocaleString()}</td>
+          <td>
+            <span class="scope-pill scope2" style="font-size:9px;margin-right:4px;">S2</span>
+            ${(row.energy_co2_kg || 0).toFixed(2)}
+          </td>
+          <td>
+            <span class="scope-pill scope3" style="font-size:9px;margin-right:4px;">S3</span>
+            ${(row.transport_co2_kg || 0).toFixed(2)}
+          </td>
+          <td><b>${row.total_co2_kg.toFixed(2)}</b></td>
+          <td style="font-size:11px;color:var(--muted);">
+            ${row.energy_ref || '—'}<br>${row.transport_ref || '—'}
+          </td>
+        </tr>`;
+    });
 
-  document.querySelector('#metricsTable tbody').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">No data. Upload a CSV to get started.</td></tr>';
-  document.getElementById('kpiTotalCo2').textContent    = totalCo2.toFixed(1);
-  document.getElementById('kpiTotalUnits').textContent  = totalUnits.toLocaleString();
-  document.getElementById('kpiTopProduct').textContent  = topProduct ? topProduct.product_name : '—';
+    document.querySelector('#metricsTable tbody').innerHTML = html ||
+      '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">No data. Upload a CSV to get started.</td></tr>';
+    document.getElementById('kpiTotalCo2').textContent   = totalCo2.toFixed(1);
+    document.getElementById('kpiTotalUnits').textContent = totalUnits.toLocaleString();
+    document.getElementById('kpiTopProduct').textContent = topProduct ? topProduct.product_name : '—';
+  } catch (e) {
+    console.error('loadMetrics error:', e);
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -1067,7 +1451,7 @@ function baseChartOptions(yLabel = '') {
       x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: CHART_DEFAULTS.gridColor } },
       y: {
         ticks: { color: '#64748b', font: { size: 11 } },
-        grid: { color: CHART_DEFAULTS.gridColor },
+        grid:  { color: CHART_DEFAULTS.gridColor },
         title: yLabel ? { display: true, text: yLabel, color: '#64748b', font: { size: 11 } } : undefined
       }
     }
@@ -1075,85 +1459,110 @@ function baseChartOptions(yLabel = '') {
 }
 
 async function loadTrends() {
-  const res  = await fetch('/trends');
-  const json = await res.json();
-  const data = json.data || [];
-  if (!data.length) return;
+  try {
+    const res  = await fetch('/trends');
+    const json = await res.json();
+    const data = json.data || [];
+    if (!data.length) return;
 
-  const labels = data.map(d => d.month);
-  const cpu    = data.map(d => d.co2_per_unit);
-  const avg    = cpu.map((v, i, arr) =>
-    i < 2 ? null : +((arr[i] + arr[i - 1] + arr[i - 2]) / 3).toFixed(3));
+    const labels = data.map(d => d.month);
+    const cpu    = data.map(d => d.co2_per_unit);
+    const avg    = cpu.map((v, i, arr) =>
+      i < 2 ? null : +((arr[i] + arr[i - 1] + arr[i - 2]) / 3).toFixed(3));
 
-  const ctx = document.getElementById('trendChart').getContext('2d');
-  if (trendChart) trendChart.destroy();
-  trendChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'CO₂ / Unit', data: cpu, borderColor: '#22d3a5', backgroundColor: 'rgba(34,211,165,0.08)', tension: 0.4, fill: true, pointRadius: 4 },
-        { label: '3-Mo Avg',   data: avg, borderColor: '#3b82f6',  borderDash: [5, 5], tension: 0.4, pointRadius: 0 }
-      ]
-    },
-    options: baseChartOptions('kg CO₂ / Unit')
-  });
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'CO₂ / Unit', data: cpu, borderColor: '#22d3a5', backgroundColor: 'rgba(34,211,165,0.08)', tension: 0.4, fill: true, pointRadius: 4 },
+          { label: '3-Mo Avg',   data: avg, borderColor: '#3b82f6', borderDash: [5, 5], tension: 0.4, pointRadius: 0 }
+        ]
+      },
+      options: baseChartOptions('kg CO₂ / Unit')
+    });
+  } catch (e) {
+    console.error('loadTrends error:', e);
+  }
 }
 
 async function loadBillTrends() {
-  const res  = await fetch('/bill-insights');
-  const json = await res.json();
-  const data = json.data || [];
-  if (!data.length) return;
+  try {
+    const res  = await fetch('/bill-insights');
+    const json = await res.json();
+    const data = json.data || [];
+    if (!data.length) return;
 
-  const months      = [...new Set(data.map(d => d.month))];
-  const electricity = months.map(m => data.filter(d => d.month === m && d.bill_type === 'electricity').reduce((a, b) => a + b.estimated_co2, 0));
-  const fuel        = months.map(m => data.filter(d => d.month === m && d.bill_type === 'fuel').reduce((a, b) => a + b.estimated_co2, 0));
-  const courier     = months.map(m => data.filter(d => d.month === m && d.bill_type === 'courier').reduce((a, b) => a + b.estimated_co2, 0));
+    const months      = [...new Set(data.map(d => d.month))].sort();
+    const electricity = months.map(m => data.filter(d => d.month === m && d.bill_type === 'electricity').reduce((a, b) => a + b.estimated_co2, 0));
+    const fuel        = months.map(m => data.filter(d => d.month === m && d.bill_type === 'fuel').reduce((a, b) => a + b.estimated_co2, 0));
+    const courier     = months.map(m => data.filter(d => d.month === m && d.bill_type === 'courier').reduce((a, b) => a + b.estimated_co2, 0));
 
-  const ctx = document.getElementById('billChart').getContext('2d');
-  if (billChart) billChart.destroy();
-  billChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: months,
-      datasets: [
-        { label: 'Electricity', data: electricity, backgroundColor: '#22d3a5', stack: 'bills' },
-        { label: 'Fuel',        data: fuel,         backgroundColor: '#f59e0b', stack: 'bills' },
-        { label: 'Courier',     data: courier,      backgroundColor: '#3b82f6', stack: 'bills' }
-      ]
-    },
-    options: { ...baseChartOptions('kg CO₂'), scales: { ...baseChartOptions().scales, x: { ...baseChartOptions().scales.x, stacked: true }, y: { ...baseChartOptions().scales.y, stacked: true } } }
-  });
+    const ctx = document.getElementById('billChart').getContext('2d');
+    if (billChart) billChart.destroy();
+    billChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          { label: 'Electricity', data: electricity, backgroundColor: '#22d3a5', stack: 'bills' },
+          { label: 'Fuel',        data: fuel,        backgroundColor: '#f59e0b', stack: 'bills' },
+          { label: 'Courier',     data: courier,     backgroundColor: '#3b82f6', stack: 'bills' }
+        ]
+      },
+      options: {
+        ...baseChartOptions('kg CO₂'),
+        scales: {
+          x: { ...baseChartOptions().scales.x, stacked: true },
+          y: { ...baseChartOptions().scales.y, stacked: true }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('loadBillTrends error:', e);
+  }
 }
 
 async function loadTotalFootprint() {
-  const res  = await fetch('/total-footprint');
-  const json = await res.json();
-  const data = json.data || [];
-  if (!data.length) return;
+  try {
+    const res  = await fetch('/total-footprint');
+    const json = await res.json();
+    const data = json.data || [];
+    if (!data.length) return;
 
-  const ctx = document.getElementById('totalFootprintChart').getContext('2d');
-  if (totalChart) totalChart.destroy();
-  totalChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: data.map(d => d.month),
-      datasets: [
-        { label: 'Product CO₂', data: data.map(d => d.product_co2), backgroundColor: '#22d3a5', stack: 'c' },
-        { label: 'Utility CO₂', data: data.map(d => d.utility_co2), backgroundColor: '#3b82f6', stack: 'c' },
-        { label: 'Total',       data: data.map(d => d.total_co2),   type: 'line', borderColor: '#f59e0b', tension: 0.3, pointRadius: 3, fill: false }
-      ]
-    },
-    options: { ...baseChartOptions('kg CO₂'), scales: { ...baseChartOptions().scales, x: { ...baseChartOptions().scales.x, stacked: true }, y: { ...baseChartOptions().scales.y, stacked: true } } }
-  });
+    const ctx = document.getElementById('totalFootprintChart').getContext('2d');
+    if (totalChart) totalChart.destroy();
+    totalChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.month),
+        datasets: [
+          { label: 'Product CO₂', data: data.map(d => d.product_co2), backgroundColor: '#22d3a5', stack: 'c' },
+          { label: 'Utility CO₂', data: data.map(d => d.utility_co2), backgroundColor: '#3b82f6', stack: 'c' },
+          { label: 'Total',       data: data.map(d => d.total_co2),   type: 'line', borderColor: '#f59e0b', tension: 0.3, pointRadius: 3, fill: false }
+        ]
+      },
+      options: {
+        ...baseChartOptions('kg CO₂'),
+        scales: {
+          x: { ...baseChartOptions().scales.x, stacked: true },
+          y: { ...baseChartOptions().scales.y, stacked: true }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('loadTotalFootprint error:', e);
+  }
 }
 
 async function loadCompanyKpis() {
   try {
     const res  = await fetch('/company-kpis');
     const json = await res.json();
-    // Optionally update a company-level KPI here
+    // Future: surface total_company_co2 in a KPI card
+    console.log('Company KPIs:', json);
   } catch {}
 }
 
@@ -1197,7 +1606,7 @@ async function uploadBill() {
   try {
     const res  = await fetch('/upload-bill?' + params, { method: 'POST' });
     const json = await res.json();
-    if (!res.ok || json.error) { toast('Bill upload failed', 'error'); }
+    if (!res.ok || json.error) { toast('Bill upload failed: ' + (json.error || 'Unknown error'), 'error'); }
     else { toast(`Bill uploaded · est. CO₂: ${json.estimated_co2.toFixed(2)} kg`); await refreshWithRetry(); }
   } catch { toast('Network error', 'error'); }
   finally { hideLoader(); }
@@ -1208,22 +1617,27 @@ async function uploadBill() {
 ═══════════════════════════════════════════ */
 
 async function loadUploadHistory() {
-  const res  = await fetch('/uploads');
-  const json = await res.json();
-  const data = json.data || [];
-  const tbody = document.querySelector('#uploadTable tbody');
+  try {
+    const res   = await fetch('/uploads');
+    const json  = await res.json();
+    const data  = json.data || [];
+    const tbody = document.querySelector('#uploadTable tbody');
 
-  tbody.innerHTML = data.map(row => `
-    <tr>
-      <td style="font-family:var(--font-mono);font-size:12px;">${new Date(row.upload_time).toLocaleString()}</td>
-      <td>${row.file_name}</td>
-      <td>${(row.rows_loaded || 0).toLocaleString()}</td>
-      <td><span class="badge ${row.status === 'SUCCESS' ? 'badge-green' : 'badge-red'}">${row.status}</span></td>
-      <td style="display:flex;gap:6px;">
-        <button class="btn btn-secondary btn-sm" onclick="viewSince('${row.upload_time}')">View Since</button>
-        <button class="btn btn-danger btn-sm"    onclick="deleteUpload('${row.upload_id}')">Delete</button>
-      </td>
-    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;">No upload history found.</td></tr>';
+    tbody.innerHTML = data.map(row => `
+      <tr>
+        <td style="font-family:var(--font-mono);font-size:12px;">${new Date(row.upload_time).toLocaleString()}</td>
+        <td>${row.file_name}</td>
+        <td>${(row.rows_loaded || 0).toLocaleString()}</td>
+        <td><span class="badge ${row.status === 'SUCCESS' ? 'badge-green' : 'badge-red'}">${row.status}</span></td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="viewSince('${row.upload_time}')">View Since</button>
+          <button class="btn btn-danger btn-sm"    onclick="deleteUpload('${row.upload_id}')">Delete</button>
+        </td>
+      </tr>`).join('') ||
+      '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;">No upload history found.</td></tr>';
+  } catch (e) {
+    console.error('loadUploadHistory error:', e);
+  }
 }
 
 async function viewSince(uploadTime) {
@@ -1298,6 +1712,7 @@ function resetLevers() {
     document.getElementById(id).value = 0;
     document.getElementById(id + '_val').textContent = '0%';
   });
+  document.getElementById('save-scenario-bar').style.display = 'none';
   document.getElementById('sim-results').innerHTML = `
     <div class="sim-empty">
       <div class="big">🔬</div>
@@ -1351,6 +1766,9 @@ async function runSimulation() {
 }
 
 function renderSimResults(d) {
+  document.getElementById('save-scenario-bar').style.display = 'block';
+  window._lastSimResult = d;
+
   const b = d.baseline;
   const s = d.simulated;
   const i = d.impact;
@@ -1358,7 +1776,6 @@ function renderSimResults(d) {
   const redClass = i.reduction_pct >= 0 ? 'green' : 'red';
   const redSign  = i.reduction_pct >= 0 ? '↓' : '↑';
 
-  // Breakdown bar data: max is baseline total
   const bMax = b.total_co2_kg;
   function bar(val, color) {
     const pct = bMax > 0 ? Math.min(100, (val / bMax) * 100) : 0;
@@ -1366,11 +1783,11 @@ function renderSimResults(d) {
   }
 
   const rows = [
-    { label: '⚡ Energy (ops)',       bv: b.breakdown.energy_co2_kg,      sv: s.breakdown.energy_co2_kg,      color: '#22d3a5' },
-    { label: '🚚 Transport (ops)',    bv: b.breakdown.transport_co2_kg,   sv: s.breakdown.transport_co2_kg,   color: '#3b82f6' },
-    { label: '🏭 Grid Electricity',  bv: b.breakdown.electricity_co2_kg, sv: s.breakdown.electricity_co2_kg, color: '#f59e0b' },
-    { label: '⛽ Fuel',              bv: b.breakdown.fuel_co2_kg,        sv: s.breakdown.fuel_co2_kg,        color: '#ef4444' },
-    { label: '📦 Courier',           bv: b.breakdown.courier_co2_kg,     sv: s.breakdown.courier_co2_kg,     color: '#a78bfa' },
+    { label: '⚡ Energy (ops)',      bv: b.breakdown.energy_co2_kg,      sv: s.breakdown.energy_co2_kg,      color: '#22d3a5' },
+    { label: '🚚 Transport (ops)',   bv: b.breakdown.transport_co2_kg,   sv: s.breakdown.transport_co2_kg,   color: '#3b82f6' },
+    { label: '🏭 Grid Electricity', bv: b.breakdown.electricity_co2_kg, sv: s.breakdown.electricity_co2_kg, color: '#f59e0b' },
+    { label: '⛽ Fuel',             bv: b.breakdown.fuel_co2_kg,        sv: s.breakdown.fuel_co2_kg,        color: '#ef4444' },
+    { label: '📦 Courier',          bv: b.breakdown.courier_co2_kg,     sv: s.breakdown.courier_co2_kg,     color: '#a78bfa' },
   ];
 
   const breakdownHTML = rows.map(r => `
@@ -1459,7 +1876,37 @@ function renderSimResults(d) {
           Grid: 0.82 kg/kWh · Renewable: 0.05 kg/kWh · Diesel: 0.0525 kg/km · EV: 0.021 kg/km · Fuel: 2.68 kg/L · Courier: 0.18 kg/kg
         </div>
       </div>
-    </div>`;
+    </div>
+
+    <!-- GHG Protocol Scope Summary -->
+    ${d.baseline.ghg_scopes ? `
+    <div class="panel" style="margin-bottom:0;">
+      <div class="panel-header">
+        <div class="panel-title">GHG Protocol Scope Breakdown</div>
+        <div style="font-size:11px;color:var(--muted);">Baseline → Simulated (kg CO₂ / month)</div>
+      </div>
+      <div class="scope-summary">
+        <div class="scope-block" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);">
+          <div class="scope-block-label"><span class="scope-pill scope1">Scope 1</span></div>
+          <div class="scope-block-val" style="color:#f87171;">${d.simulated.ghg_scopes.scope1_kg.toFixed(0)}</div>
+          <div class="scope-block-sub">from ${d.baseline.ghg_scopes.scope1_kg.toFixed(0)} · Direct combustion</div>
+        </div>
+        <div class="scope-block" style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);">
+          <div class="scope-block-label"><span class="scope-pill scope2">Scope 2</span></div>
+          <div class="scope-block-val" style="color:#60a5fa;">${d.simulated.ghg_scopes.scope2_kg.toFixed(0)}</div>
+          <div class="scope-block-sub">from ${d.baseline.ghg_scopes.scope2_kg.toFixed(0)} · Purchased electricity</div>
+        </div>
+        <div class="scope-block" style="background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.2);">
+          <div class="scope-block-label"><span class="scope-pill scope3">Scope 3</span></div>
+          <div class="scope-block-val" style="color:#c084fc;">${d.simulated.ghg_scopes.scope3_kg.toFixed(0)}</div>
+          <div class="scope-block-sub">from ${d.baseline.ghg_scopes.scope3_kg.toFixed(0)} · Transport & courier</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;padding:0 4px;">
+        Per GHG Protocol Corporate Standard. Scope 1 = own fleet fuel. Scope 2 = grid/renewable electricity.
+        Scope 3 = outsourced logistics & courier.
+      </div>
+    </div>` : ''}`;
 }
 
 /* ═══════════════════════════════════════════
@@ -1469,6 +1916,298 @@ function renderSimResults(d) {
 window.onload = async () => {
   await refreshDashboard();
 };
+
+/* ═══════════════════════════════════════════
+   SETTINGS — EMISSION FACTORS
+═══════════════════════════════════════════ */
+
+const FACTOR_MAP = {
+  f_grid:      { key: 'grid_electricity', default: 0.82   },
+  f_renewable: { key: 'renewable_energy', default: 0.05   },
+  f_truck:     { key: 'freight_truck',    default: 0.0525 },
+  f_ev:        { key: 'ev_transport',     default: 0.021  },
+  f_fuel:      { key: 'fuel',             default: 2.68   },
+  f_courier:   { key: 'courier',          default: 0.18   },
+};
+
+async function loadSettings() {
+  try {
+    const res  = await fetch('/settings/factors');
+    const json = await res.json();
+    const f    = json.factors;
+
+    document.getElementById('f_grid').value      = f.grid_electricity;
+    document.getElementById('f_renewable').value = f.renewable_energy;
+    document.getElementById('f_truck').value      = f.freight_truck;
+    document.getElementById('f_ev').value         = f.ev_transport;
+    document.getElementById('f_fuel').value       = f.fuel;
+    document.getElementById('f_courier').value    = f.courier;
+
+    for (const [fieldId, meta] of Object.entries(FACTOR_MAP)) {
+      const el  = document.getElementById(fieldId);
+      const val = parseFloat(el.value);
+      el.classList.toggle('changed', Math.abs(val - meta.default) > 0.00001);
+    }
+
+    const badge = document.getElementById('factors-status-badge');
+    if (json.is_customised) {
+      badge.textContent  = '⚠ Custom Factors Active';
+      badge.style.cssText = 'background:rgba(245,158,11,0.15);color:#f59e0b;font-size:11px;padding:3px 10px;border-radius:20px;font-family:var(--font-mono);';
+    } else {
+      badge.textContent  = '✓ Using System Defaults';
+      badge.style.cssText = 'background:rgba(34,211,165,0.12);color:var(--accent);font-size:11px;padding:3px 10px;border-radius:20px;font-family:var(--font-mono);';
+    }
+
+    if (json.is_customised) {
+      ['src_grid','src_renewable','src_truck','src_ev','src_fuel','src_courier'].forEach(id => {
+        document.getElementById(id).textContent = 'Custom value';
+      });
+    }
+  } catch (e) {
+    console.error('Could not load settings:', e);
+  }
+}
+
+async function saveFactors() {
+  const payload = {
+    grid_electricity: parseFloat(document.getElementById('f_grid').value),
+    renewable_energy: parseFloat(document.getElementById('f_renewable').value),
+    freight_truck:    parseFloat(document.getElementById('f_truck').value),
+    ev_transport:     parseFloat(document.getElementById('f_ev').value),
+    fuel:             parseFloat(document.getElementById('f_fuel').value),
+    courier:          parseFloat(document.getElementById('f_courier').value),
+  };
+
+  for (const [k, v] of Object.entries(payload)) {
+    if (!v || v <= 0) {
+      showSettingsBanner(`"${k}" must be greater than 0.`, 'error');
+      return;
+    }
+  }
+
+  showLoader();
+  try {
+    const res  = await fetch('/settings/factors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (json.error) {
+      showSettingsBanner('Save failed: ' + json.error, 'error');
+    } else {
+      showSettingsBanner('✓ Factors saved. All calculations now use your custom values.', 'success');
+      await loadSettings();
+      refreshDashboard();
+    }
+  } catch (e) {
+    showSettingsBanner('Network error — could not save.', 'error');
+  } finally {
+    hideLoader();
+  }
+}
+
+async function resetFactors() {
+  if (!confirm('Restore all emission factors to system defaults?')) return;
+  showLoader();
+  try {
+    await fetch('/settings/factors/reset', { method: 'POST' });
+    showSettingsBanner('✓ Factors restored to system defaults.', 'success');
+    await loadSettings();
+    refreshDashboard();
+  } catch {
+    showSettingsBanner('Reset failed.', 'error');
+  } finally {
+    hideLoader();
+  }
+}
+
+function resetSingle(fieldId, defaultVal) {
+  const el = document.getElementById(fieldId);
+  el.value = defaultVal;
+  el.classList.remove('changed');
+}
+
+function showSettingsBanner(msg, type) {
+  const el = document.getElementById('settings-banner');
+  el.textContent = msg;
+  el.className   = type;
+  setTimeout(() => { el.style.display = 'none'; el.className = ''; }, 5000);
+}
+
+document.addEventListener('input', e => {
+  if (!e.target.id.startsWith('f_')) return;
+  const meta = FACTOR_MAP[e.target.id];
+  if (!meta) return;
+  const val = parseFloat(e.target.value);
+  e.target.classList.toggle('changed', Math.abs(val - meta.default) > 0.00001);
+});
+
+
+/* ═══════════════════════════════════════════
+   SCENARIOS — Save / Load / Compare
+═══════════════════════════════════════════ */
+
+async function saveScenario() {
+  const name = document.getElementById('scenario-name').value.trim();
+  if (!name) { toast('Please enter a scenario name', 'error'); return; }
+  if (!window._lastSimResult) { toast('Run a simulation first', 'error'); return; }
+
+  const levers = {
+    monthly_units:           parseFloat(document.getElementById('sim_monthly_units').value),
+    energy_kwh_per_unit:     parseFloat(document.getElementById('sim_energy_kwh').value),
+    transport_km_per_unit:   parseFloat(document.getElementById('sim_transport_km').value),
+    electricity_units:       parseFloat(document.getElementById('sim_elec_units').value),
+    fuel_units:              parseFloat(document.getElementById('sim_fuel_units').value),
+    courier_units:           parseFloat(document.getElementById('sim_courier_units').value),
+    energy_reduction_pct:    parseFloat(document.getElementById('lv_energy').value),
+    transport_reduction_pct: parseFloat(document.getElementById('lv_transport').value),
+    renewable_energy_pct:    parseFloat(document.getElementById('lv_renewable').value),
+    ev_fleet_pct:            parseFloat(document.getElementById('lv_ev').value),
+    packaging_reduction_pct: parseFloat(document.getElementById('lv_packaging').value),
+    units_growth_pct:        parseFloat(document.getElementById('lv_growth').value),
+  };
+
+  showLoader();
+  try {
+    const res = await fetch('/scenarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        description: document.getElementById('scenario-desc').value.trim(),
+        levers,
+        result: window._lastSimResult
+      })
+    });
+    const json = await res.json();
+    if (json.error) { toast('Save failed: ' + json.error, 'error'); }
+    else {
+      toast(`Scenario "${name}" saved`);
+      document.getElementById('scenario-name').value = '';
+      document.getElementById('scenario-desc').value = '';
+      await loadScenarioList();
+    }
+  } catch { toast('Network error', 'error'); }
+  finally { hideLoader(); }
+}
+
+async function loadScenarioList() {
+  try {
+    const res  = await fetch('/scenarios');
+    const json = await res.json();
+    renderScenarioList(json.data || []);
+  } catch (e) {
+    document.getElementById('scenario-list').innerHTML =
+      '<div style="padding:20px;color:var(--muted);font-size:13px;">Could not load scenarios.</div>';
+  }
+}
+
+function renderScenarioList(scenarios) {
+  const el = document.getElementById('scenario-list');
+  if (!scenarios.length) {
+    el.innerHTML = `<div class="sim-empty" style="padding:24px;">
+      <div style="font-size:24px;margin-bottom:6px;">📁</div>
+      No saved scenarios yet. Run a simulation and save it above.
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="scenario-grid">` +
+    scenarios.map(s => {
+      const r   = s.result || {};
+      const imp = r.impact  || {};
+      const red = imp.reduction_pct != null ? imp.reduction_pct.toFixed(1) : '—';
+      const sav = imp.co2_saved_kg  != null ? imp.co2_saved_kg.toFixed(0)  : '—';
+      const sim = r.simulated ? r.simulated.total_co2_kg.toFixed(0) : '—';
+      const redClass = parseFloat(red) >= 0 ? 'color:var(--accent)' : 'color:var(--danger)';
+      const date = new Date(s.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+
+      const levers = s.levers || {};
+      const activeLeverLabels = [];
+      if (levers.renewable_energy_pct    > 0) activeLeverLabels.push(`☀️ ${levers.renewable_energy_pct}% Renewable`);
+      if (levers.ev_fleet_pct            > 0) activeLeverLabels.push(`🔋 ${levers.ev_fleet_pct}% EV`);
+      if (levers.energy_reduction_pct    > 0) activeLeverLabels.push(`⚡ ${levers.energy_reduction_pct}% Energy Eff.`);
+      if (levers.transport_reduction_pct > 0) activeLeverLabels.push(`🚚 ${levers.transport_reduction_pct}% Routes`);
+      if (levers.packaging_reduction_pct > 0) activeLeverLabels.push(`📦 ${levers.packaging_reduction_pct}% Packaging`);
+      if (levers.units_growth_pct        > 0) activeLeverLabels.push(`📈 +${levers.units_growth_pct}% Growth`);
+
+      return `
+        <div class="scenario-card" onclick="loadScenario('${s.scenario_id}')">
+          <div class="scenario-meta">
+            <div class="scenario-name">${s.name}</div>
+            <div class="scenario-desc" style="margin-bottom:6px;">${s.description || 'No description'}</div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Saved ${date}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              ${activeLeverLabels.map(l => `<span style="font-size:10px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--muted);">${l}</span>`).join('')}
+            </div>
+          </div>
+          <div class="scenario-stats">
+            <div class="scenario-stat">
+              <div class="scenario-stat-val" style="${redClass}">${red}%</div>
+              <div class="scenario-stat-lbl">Reduction</div>
+            </div>
+            <div class="scenario-stat">
+              <div class="scenario-stat-val">${sim}</div>
+              <div class="scenario-stat-lbl">kg CO₂/mo</div>
+            </div>
+            <div class="scenario-stat">
+              <div class="scenario-stat-val" style="color:var(--accent);">${sav}</div>
+              <div class="scenario-stat-lbl">kg Saved</div>
+            </div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteScenario('${s.scenario_id}','${s.name.replace(/'/g,'')}')" style="margin-left:4px;">✕</button>
+        </div>`;
+    }).join('') + `</div>`;
+}
+
+async function loadScenario(scenarioId) {
+  showLoader();
+  try {
+    const res  = await fetch(`/scenarios/${scenarioId}`);
+    const json = await res.json();
+    if (json.error) { toast('Could not load scenario', 'error'); return; }
+
+    const l = json.levers || {};
+
+    if (l.monthly_units)         document.getElementById('sim_monthly_units').value = l.monthly_units;
+    if (l.energy_kwh_per_unit)   document.getElementById('sim_energy_kwh').value    = l.energy_kwh_per_unit;
+    if (l.transport_km_per_unit) document.getElementById('sim_transport_km').value  = l.transport_km_per_unit;
+    if (l.electricity_units)     document.getElementById('sim_elec_units').value    = l.electricity_units;
+    if (l.fuel_units)            document.getElementById('sim_fuel_units').value    = l.fuel_units;
+    if (l.courier_units)         document.getElementById('sim_courier_units').value = l.courier_units;
+
+    const sliderMap = {
+      lv_energy:    'energy_reduction_pct',
+      lv_transport: 'transport_reduction_pct',
+      lv_renewable: 'renewable_energy_pct',
+      lv_ev:        'ev_fleet_pct',
+      lv_packaging: 'packaging_reduction_pct',
+      lv_growth:    'units_growth_pct',
+    };
+    for (const [sliderId, leverKey] of Object.entries(sliderMap)) {
+      const val = l[leverKey] ?? 0;
+      document.getElementById(sliderId).value = val;
+      document.getElementById(sliderId + '_val').textContent = val + '%';
+    }
+
+    window._lastSimResult = json.result;
+    renderSimResults(json.result);
+    toast(`Loaded scenario: ${json.name}`);
+
+    document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('active-scenario'));
+
+  } catch { toast('Failed to load scenario', 'error'); }
+  finally { hideLoader(); }
+}
+
+async function deleteScenario(id, name) {
+  if (!confirm(`Delete scenario "${name}"?`)) return;
+  const res = await fetch(`/scenarios/${id}`, { method: 'DELETE' });
+  if (res.ok) { toast('Scenario deleted'); await loadScenarioList(); }
+  else toast('Delete failed', 'error');
+}
+
 </script>
 </body>
 </html>
